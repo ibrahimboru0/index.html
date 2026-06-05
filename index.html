@@ -742,7 +742,7 @@ function cleanFirma(aciklama) {
     font-weight: 600;
   }
 
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table { width: 100%; border-collapse: collapse; }
 
   thead th {
     padding: 10px 8px;
@@ -767,8 +767,6 @@ function cleanFirma(aciklama) {
     padding: 12px 8px;
     font-size: 13px;
     color: #d0dcff;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -1507,16 +1505,16 @@ function cleanFirma(aciklama) {
           <h3 id="table-title">Harcama Listesi</h3>
           <span class="table-count" id="table-count">0 kayıt</span>
         </div>
-        <div>
-          <table>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table style="min-width:560px">
             <thead>
               <tr>
-                <th style="width:22%">Tarih</th>
-                <th style="width:13%">Saat</th>
-                <th style="width:28%">Firma</th>
-                <th style="width:22%">Sektör</th>
-                <th style="width:12%;text-align:right">Tutar</th>
-                <th style="width:3%"></th>
+                <th style="width:90px">Tarih</th>
+                <th style="width:60px">Saat</th>
+                <th style="width:160px">Firma</th>
+                <th style="width:140px">Sektör</th>
+                <th style="width:90px;text-align:right">Tutar</th>
+                <th style="width:40px"></th>
               </tr>
             </thead>
             <tbody id="table-body"></tbody>
