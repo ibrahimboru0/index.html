@@ -1265,6 +1265,7 @@ function cleanFirma(aciklama) {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     max-width: 100%;
+    min-width: 0;
   }
   .period-btns::-webkit-scrollbar { display: none; }
 
@@ -1497,7 +1498,7 @@ function cleanFirma(aciklama) {
             <option value="tumu">💳 Tümü</option>
           </select>
           <!-- İşlem türü butonları -->
-          <div class="period-btns" id="islem-turu-btns">
+          <div class="period-btns" id="islem-turu-btns" style="flex:1 1 100%;width:100%">
             <button class="period-btn active" onclick="setIslemTuru('hepsi')"  id="itu-hepsi">Hepsi</button>
             <button class="period-btn"        onclick="setIslemTuru('normal')" id="itu-normal">🛒 Harcama</button>
             <button class="period-btn"        onclick="setIslemTuru('eft')"    id="itu-eft">💸 Transfer</button>
