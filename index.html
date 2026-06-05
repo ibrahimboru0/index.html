@@ -313,9 +313,9 @@ function cleanFirma(aciklama) {
     display: block;
     height: env(safe-area-inset-top);
     background: linear-gradient(135deg, var(--yk-blue), var(--yk-light-blue));
-    position: fixed;
+    position: relative;
     top: 0; left: 0; right: 0;
-    z-index: 51;
+    z-index: 2;
   }
 
   /* ========== LOGIN ========== */
@@ -502,8 +502,10 @@ function cleanFirma(aciklama) {
   .header-inner {
     height: 56px;
     padding: 0 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
     display: flex; align-items: center; justify-content: space-between;
-    margin-top: env(safe-area-inset-top);
+    position: relative; z-index: 1;
   }
 
   .header-logo {
@@ -918,6 +920,183 @@ function cleanFirma(aciklama) {
     width: 100%;
   }
 
+  /* ========== TAKVİM ========== */
+  .takvim-ay-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .takvim-ay-nav button {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid #003399;
+    color: #e8eeff;
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    font-size: 20px; cursor: pointer;
+    transition: background 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .takvim-ay-nav button:hover { background: rgba(255,184,0,0.2); color: #FFB800; }
+
+  .takvim-ay-baslik {
+    font-family: 'Nunito', sans-serif;
+    font-size: 20px; font-weight: 800; color: #fff;
+    text-align: center;
+  }
+
+  .takvim-ozet {
+    background: var(--card2);
+    border: 1px solid #004080;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+
+  .takvim-ozet-item {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 0 16px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  .takvim-ozet-item:first-child { padding-left: 0; }
+  .takvim-ozet-item:last-child { border-right: none; }
+
+  .takvim-ozet-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: rgba(255,255,255,0.4); }
+  .takvim-ozet-val { font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800; line-height: 1.2; }
+
+  .takvim-legend {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .takvim-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 600; }
+  .takvim-legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* Takvim grid — 7 eşit sütun */
+  .takvim-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .takvim-gun-baslik {
+    text-align: center;
+    font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 8px 2px 10px;
+  }
+  .takvim-gun-baslik.hafta-sonu { color: rgba(255,184,0,0.5); }
+
+  .takvim-gun {
+    border-radius: 10px;
+    padding: 8px 4px 6px;
+    min-height: 64px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    border: 1.5px solid transparent;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  .takvim-gun.bos { background: transparent; border-color: transparent; pointer-events: none; }
+
+  .takvim-gun.yesil {
+    background: rgba(0,184,148,0.28);
+    border-color: rgba(0,184,148,0.6);
+  }
+  .takvim-gun.sari {
+    background: rgba(255,184,0,0.28);
+    border-color: rgba(255,184,0,0.65);
+    cursor: pointer;
+  }
+  .takvim-gun.sari:active, .takvim-gun.sari:hover { background: rgba(255,184,0,0.42); }
+
+  .takvim-gun.kirmizi {
+    background: rgba(255,107,107,0.32);
+    border-color: rgba(255,107,107,0.7);
+    cursor: pointer;
+  }
+  .takvim-gun.kirmizi:active, .takvim-gun.kirmizi:hover { background: rgba(255,107,107,0.45); }
+
+  .takvim-gun.bos-gun {
+    background: rgba(255,255,255,0.02);
+    border-color: rgba(255,255,255,0.05);
+  }
+
+  .takvim-gun.bugun { box-shadow: 0 0 0 2px #FFB800 !important; }
+
+  .takvim-gun-no {
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px; font-weight: 800;
+    line-height: 1;
+  }
+  .takvim-gun.bos-gun .takvim-gun-no { color: rgba(255,255,255,0.2); }
+  .takvim-gun.yesil .takvim-gun-no { color: #00b894; }
+  .takvim-gun.sari .takvim-gun-no { color: #FFB800; }
+  .takvim-gun.kirmizi .takvim-gun-no { color: #ff6b6b; }
+
+  .takvim-gun-tutar {
+    font-size: 9px; font-weight: 700;
+    text-align: center; line-height: 1.2;
+    word-break: break-all;
+  }
+  .takvim-gun.sari .takvim-gun-tutar { color: rgba(255,184,0,0.85); }
+  .takvim-gun.kirmizi .takvim-gun-tutar { color: rgba(255,107,107,0.85); }
+
+  .takvim-gun-islem {
+    font-size: 9px; color: rgba(255,255,255,0.3); font-weight: 600;
+    text-align: center;
+  }
+
+  /* Detay modal */
+  .takvim-detay-modal {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,10,40,0.85);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .takvim-detay-modal.show { display: flex; }
+  .takvim-detay-ic {
+    background: #001a4d;
+    border: 1px solid #003399;
+    border-radius: 20px;
+    width: 100%; max-width: 480px;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  .takvim-detay-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .takvim-detay-liste {
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 8px 20px 20px;
+    flex: 1;
+  }
+
+  @media (max-width: 600px) {
+    .takvim-gun { min-height: 52px; padding: 6px 2px 4px; border-radius: 8px; }
+    .takvim-gun-no { font-size: 13px; }
+    .takvim-gun-tutar { font-size: 8px; }
+    .takvim-gun-islem { display: none; }
+    .takvim-ozet { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .takvim-ozet-item { border-right: none; padding: 0; }
+    .takvim-ozet-val { font-size: 14px; }
+    .takvim-grid { gap: 3px; }
+    .takvim-gun-baslik { font-size: 10px; padding: 6px 0 8px; }
+  }
+
   /* ========== ADD MODAL ========== */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 200;
@@ -1257,6 +1436,9 @@ function cleanFirma(aciklama) {
       <div class="tab active" onclick="switchTab('harcamalar')" id="tab-harcamalar">
         <span class="tab-icon">💳</span> Harcamalar
       </div>
+      <div class="tab" onclick="switchTab('takvim')" id="tab-takvim">
+        <span class="tab-icon">📅</span> Takvim
+      </div>
       <div class="tab" onclick="switchTab('grafikler')" id="tab-grafikler">
         <span class="tab-icon">📊</span> Grafikler
       </div>
@@ -1319,6 +1501,11 @@ function cleanFirma(aciklama) {
           <p>Bu dönemde kayıt bulunamadı</p>
         </div>
       </div>
+    </div>
+
+    <!-- TAKVİM PAGE -->
+    <div class="page" id="page-takvim">
+      <div id="takvim-container"></div>
     </div>
 
     <!-- GRAFIKLER PAGE -->
@@ -1521,6 +1708,20 @@ function cleanFirma(aciklama) {
       <button class="modal-cancel" onclick="closeModal()">İptal</button>
       <button class="modal-save" onclick="saveHarcama()">Kaydet ✓</button>
     </div>
+  </div>
+</div>
+
+<!-- TAKVİM DETAY MODAL -->
+<div class="takvim-detay-modal" id="takvim-detay-modal">
+  <div class="takvim-detay-ic">
+    <div class="takvim-detay-header">
+      <div>
+        <div id="td-baslik" style="font-size:16px;font-weight:800;color:#e8eeff"></div>
+        <div id="td-ozet" style="font-size:13px;color:#7a9acd;margin-top:3px"></div>
+      </div>
+      <button onclick="closeTakvimDetay()" style="background:rgba(255,255,255,0.08);border:none;color:#a0b8e0;font-size:18px;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div class="takvim-detay-liste" id="td-liste"></div>
   </div>
 </div>
 
@@ -1807,6 +2008,7 @@ function switchTab(tab) {
   document.getElementById('page-'+tab).classList.add('active');
   if (tab === 'grafikler') renderCharts();
   if (tab === 'faturalar') renderFaturaListe();
+  if (tab === 'takvim') renderTakvim();
 }
 
 // ===================== TABLE =====================
@@ -2587,8 +2789,21 @@ function renderFaturaListe() {
   }
   empty.style.display = 'none';
 
-  // Tarihe göre sırala
-  const sorted = [...faturalar].sort((a,b) => a.tarih.localeCompare(b.tarih));
+  // Sabit sıralama: Elektrik → Su → Doğal Gaz → İnternet → diğerleri (kendi aralarında tarihe göre)
+  const FATURA_SIRA = ['elektrik', 'su', 'doğal gaz', 'dogal gaz', 'internet'];
+  function faturaOncelik(kurum) {
+    const k = kurum.toLowerCase();
+    for (let i = 0; i < FATURA_SIRA.length; i++) {
+      if (k.includes(FATURA_SIRA[i])) return i;
+    }
+    return FATURA_SIRA.length;
+  }
+  const sorted = [...faturalar].sort((a, b) => {
+    const pa = faturaOncelik(a.kurum);
+    const pb = faturaOncelik(b.kurum);
+    if (pa !== pb) return pa - pb;
+    return a.tarih.localeCompare(b.tarih);
+  });
 
   liste.innerHTML = sorted.map(f => {
     const tarihStr = f.tarih.split('-').reverse().join('.');
@@ -2610,7 +2825,7 @@ function renderFaturaListe() {
       <div style="font-size:13px;color:${gecmis ? '#ff6b6b' : yakin ? '#FFB800' : '#7a9acd'};margin-bottom:${f.aboneNo ? '5px' : '0'}">
         ${gecmis ? '⚠️' : yakin ? '⏰' : '📅'} ${tarihStr}${gecmis ? ' · Geçmiş' : yakin ? ' · Yaklaşıyor' : ''}
       </div>
-      ${f.aboneNo ? `<div style="font-size:13px;color:#a0b8e0">🔢 ${f.aboneNo}</div>` : ''}
+      ${f.aboneNo ? `<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;color:#a0b8e0">🔢 ${f.aboneNo}</span><button onclick="event.stopPropagation();copyAboneNo('${f.aboneNo}')" style="background:rgba(255,184,0,0.12);border:1px solid rgba(255,184,0,0.3);color:#FFB800;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif">📋 Kopyala</button></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -3223,6 +3438,186 @@ function confirmImport() {
   } else {
     showToast(`✅ ${added} işlem başarıyla eklendi`);
   }
+}
+
+// ===================== TAKVİM =====================
+let takvimAy = null; // 'YYYY-MM' formatında
+
+function renderTakvim() {
+  const container = document.getElementById('takvim-container');
+
+  if (!takvimAy) {
+    const aylar = [...new Set(harcamalar.filter(h=>h.tarih).map(h=>h.tarih.slice(0,7)))].sort();
+    takvimAy = aylar.length > 0 ? aylar[aylar.length - 1] : new Date().toISOString().slice(0,7);
+  }
+
+  const [yil, ay] = takvimAy.split('-').map(Number);
+  const ayAdi = MONTH_NAMES[ay - 1] + ' ' + yil;
+
+  const gunMap = {};
+  harcamalar.filter(h => h.tarih && h.tarih.startsWith(takvimAy)).forEach(h => {
+    if (!gunMap[h.tarih]) gunMap[h.tarih] = { tutar: 0, items: [] };
+    gunMap[h.tarih].tutar += parseFloat(h.tutar || 0);
+    gunMap[h.tarih].items.push(h);
+  });
+
+  const toplamTutar = Object.values(gunMap).reduce((s, g) => s + g.tutar, 0);
+  const harcamaGunSayisi = Object.keys(gunMap).length;
+  const topIslem = Object.values(gunMap).reduce((s, g) => s + g.items.length, 0);
+  const enYuksekGun = Object.entries(gunMap).sort((a,b) => b[1].tutar - a[1].tutar)[0];
+
+  const fmtKisa = n => {
+    if (n >= 1000) return '₺' + (n/1000).toFixed(1) + 'K';
+    return '₺' + Math.round(n);
+  };
+  const fmt = n => '₺' + parseFloat(n).toLocaleString('tr-TR', {minimumFractionDigits:2});
+
+  const ilkGun = new Date(yil, ay - 1, 1);
+  let baslangicOffset = ilkGun.getDay() === 0 ? 6 : ilkGun.getDay() - 1;
+  const ayinGunSayisi = new Date(yil, ay, 0).getDate();
+  const bugun = new Date().toISOString().slice(0, 10);
+
+  // Gün başlıkları
+  const gunBasliklari = [
+    {k:'Pzt', hs:false},{k:'Sal',hs:false},{k:'Çar',hs:false},
+    {k:'Per',hs:false},{k:'Cum',hs:false},{k:'Cmt',hs:true},{k:'Paz',hs:true}
+  ];
+  let gunlerHtml = gunBasliklari.map(g =>
+    `<div class="takvim-gun-baslik${g.hs?' hafta-sonu':''}">${g.k}</div>`
+  ).join('');
+
+  for (let i = 0; i < baslangicOffset; i++) {
+    gunlerHtml += `<div class="takvim-gun bos"></div>`;
+  }
+
+  for (let g = 1; g <= ayinGunSayisi; g++) {
+    const tarihStr = `${yil}-${String(ay).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
+    const gunData = gunMap[tarihStr];
+    const isBugun = tarihStr === bugun;
+    // Haftanın günü (0=Pzt ... 6=Paz)
+    const gunHaftaIci = new Date(tarihStr).getDay();
+    const isHafta = gunHaftaIci === 0 || gunHaftaIci === 6;
+
+    let renk = 'bos-gun';
+    let tutarHtml = '';
+    let islemHtml = '';
+
+    if (gunData) {
+      const t = gunData.tutar;
+      renk = t <= 0 ? 'bos-gun' : t <= 500 ? 'sari' : 'kirmizi';
+      tutarHtml = `<div class="takvim-gun-tutar">${fmtKisa(t)}</div>`;
+      islemHtml = `<div class="takvim-gun-islem">${gunData.items.length} işlem</div>`;
+    } else {
+      if (tarihStr < bugun) renk = 'yesil';
+    }
+
+    const clickAttr = gunData ? `onclick="showTakvimDetay('${tarihStr}')"` : '';
+    gunlerHtml += `
+      <div class="takvim-gun ${renk}${isBugun?' bugun':''}${isHafta&&renk==='bos-gun'?' hafta-sonu-gun':''}" ${clickAttr}>
+        <div class="takvim-gun-no">${g}</div>
+        ${tutarHtml}
+        ${islemHtml}
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div style="max-width:860px;margin:0 auto">
+      <div class="takvim-ay-nav">
+        <button onclick="takvimAyDegis(-1)">‹</button>
+        <div class="takvim-ay-baslik">📅 ${ayAdi}</div>
+        <button onclick="takvimAyDegis(1)">›</button>
+      </div>
+
+      <div class="takvim-ozet">
+        <div class="takvim-ozet-item">
+          <div class="takvim-ozet-label">Aylık Toplam</div>
+          <div class="takvim-ozet-val" style="color:#ff6b6b">${fmt(toplamTutar)}</div>
+        </div>
+        <div class="takvim-ozet-item">
+          <div class="takvim-ozet-label">Harcama Günü</div>
+          <div class="takvim-ozet-val" style="color:#FFB800">${harcamaGunSayisi} gün</div>
+        </div>
+        <div class="takvim-ozet-item">
+          <div class="takvim-ozet-label">Toplam İşlem</div>
+          <div class="takvim-ozet-val" style="color:#a29bfe">${topIslem}</div>
+        </div>
+        <div class="takvim-ozet-item">
+          <div class="takvim-ozet-label">En Yüksek Gün</div>
+          <div class="takvim-ozet-val" style="color:#00b894;font-size:13px">${enYuksekGun ? enYuksekGun[0].split('-').reverse().join('.') + '<br>' + fmt(enYuksekGun[1].tutar) : '—'}</div>
+        </div>
+      </div>
+
+      <div class="takvim-legend">
+        <div class="takvim-legend-item"><div class="takvim-legend-dot" style="background:rgba(0,184,148,0.35);border:1.5px solid rgba(0,184,148,0.7)"></div>Harcama yok</div>
+        <div class="takvim-legend-item"><div class="takvim-legend-dot" style="background:rgba(255,184,0,0.35);border:1.5px solid rgba(255,184,0,0.75)"></div>0 – 500 ₺</div>
+        <div class="takvim-legend-item"><div class="takvim-legend-dot" style="background:rgba(255,107,107,0.4);border:1.5px solid rgba(255,107,107,0.8)"></div>500 ₺ üzeri</div>
+        <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.25)">Tıkla → detay</div>
+      </div>
+
+      <div class="takvim-grid">${gunlerHtml}</div>
+    </div>`;
+}
+
+function takvimAyDegis(yon) {
+  if (!takvimAy) return;
+  const [y, m] = takvimAy.split('-').map(Number);
+  const yeni = new Date(y, m - 1 + yon, 1);
+  takvimAy = yeni.getFullYear() + '-' + String(yeni.getMonth() + 1).padStart(2, '0');
+  renderTakvim();
+}
+
+function showTakvimDetay(tarih) {
+  const gunData = {};
+  harcamalar.filter(h => h.tarih === tarih).forEach(h => {
+    if (!gunData[tarih]) gunData[tarih] = { tutar: 0, items: [] };
+    gunData[tarih].tutar += parseFloat(h.tutar || 0);
+    gunData[tarih].items.push(h);
+  });
+
+  const data = gunData[tarih];
+  if (!data) return;
+
+  const fmt = n => '₺' + parseFloat(n).toLocaleString('tr-TR', {minimumFractionDigits:2});
+  const tarihGoster = tarih.split('-').reverse().join('.');
+
+  document.getElementById('td-baslik').textContent = '📅 ' + tarihGoster;
+  document.getElementById('td-ozet').textContent = `${data.items.length} işlem · Toplam ${fmt(data.tutar)}`;
+
+  const sorted = [...data.items].sort((a,b) => (b.saat||'').localeCompare(a.saat||''));
+  document.getElementById('td-liste').innerHTML = sorted.map(h => {
+    const sm = SECTOR_MAP[h.sektor] || { label: h.sektor, cls: 'sector-other' };
+    const saat = h.saat ? h.saat.slice(0,5) : '—';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:12px">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <span class="sector-badge ${sm.cls}" style="white-space:nowrap;flex-shrink:0">${sm.label}</span>
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#e8eeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.firma}</div>
+          <div style="font-size:11px;color:#7a9acd">${saat}</div>
+        </div>
+      </div>
+      <div style="font-size:14px;font-weight:800;color:#ff6b6b;white-space:nowrap">${fmt(h.tutar)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('takvim-detay-modal').classList.add('show');
+}
+
+function closeTakvimDetay() {
+  document.getElementById('takvim-detay-modal').classList.remove('show');
+}
+
+document.getElementById('takvim-detay-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeTakvimDetay();
+});
+
+function copyAboneNo(no) {
+  navigator.clipboard.writeText(no).then(() => showToast('📋 Abone no kopyalandı!')).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = no; document.body.appendChild(el);
+    el.select(); document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('📋 Abone no kopyalandı!');
+  });
 }
 
 // Init
