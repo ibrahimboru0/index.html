@@ -1261,8 +1261,14 @@ function cleanFirma(aciklama) {
     padding: 4px;
     border-radius: 12px;
     border: 1px solid #003399;
-    flex-wrap: wrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    max-width: 100%;
   }
+  .period-btns::-webkit-scrollbar { display: none; }
 
   .period-btn {
     padding: 8px 18px;
@@ -1274,6 +1280,7 @@ function cleanFirma(aciklama) {
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .period-btn:hover { color: rgba(255,255,255,0.85); }
