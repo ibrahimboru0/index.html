@@ -574,8 +574,10 @@ function cleanFirma(aciklama) {
     padding: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    touch-action: pan-x;
   }
   .tabs::-webkit-scrollbar { display: none; }
 
@@ -1505,7 +1507,7 @@ function cleanFirma(aciklama) {
           <h3 id="table-title">Harcama Listesi</h3>
           <span class="table-count" id="table-count">0 kayıt</span>
         </div>
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x">
           <table style="min-width:560px">
             <thead>
               <tr>
@@ -1596,9 +1598,9 @@ function cleanFirma(aciklama) {
           </div>
         </div>
 
-        <!-- Ekleme Formu -->
+        <!-- Ekleme/Düzenleme Formu -->
         <div id="fatura-form" style="display:none;background:#002266;border:1px solid #003399;border-radius:16px;padding:20px;margin-bottom:20px">
-          <div style="font-size:14px;font-weight:700;color:#FFB800;margin-bottom:14px">Yeni Fatura Ekle</div>
+          <div id="fatura-form-baslik" style="font-size:14px;font-weight:700;color:#FFB800;margin-bottom:14px">Yeni Fatura Ekle</div>
           <div style="display:flex;flex-direction:column;gap:12px">
             <div>
               <label style="font-size:12px;color:#7a9acd;font-weight:600;display:block;margin-bottom:6px">KURUM ADI</label>
@@ -2762,11 +2764,29 @@ function faturalarMod(mod) {
   }
 }
 
+let faturaDuzenleId = null;
+
 function faturaFormKapat() {
   document.getElementById('fatura-form').style.display = 'none';
   document.getElementById('fatura-kurum').value = '';
   document.getElementById('fatura-tarih').value = '';
   document.getElementById('fatura-tutar').value = '';
+  document.getElementById('fatura-form-baslik').textContent = 'Yeni Fatura Ekle';
+  faturaDuzenleId = null;
+}
+
+function faturaDuzenle(id) {
+  const f = faturalar.find(x => x.id === id);
+  if (!f) return;
+  faturaSecimModu = false;
+  faturaDuzenleId = id;
+  document.getElementById('fatura-form').style.display = 'block';
+  document.getElementById('fatura-form-baslik').textContent = '✏️ Faturayı Düzenle';
+  document.getElementById('fatura-kurum').value = f.kurum;
+  document.getElementById('fatura-tarih').value = f.tarih;
+  document.getElementById('fatura-tutar').value = f.aboneNo || '';
+  renderFaturaListe();
+  document.getElementById('fatura-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function faturaKaydet() {
@@ -2777,17 +2797,22 @@ function faturaKaydet() {
   if (!kurum) { showToast('⚠️ Kurum adı gerekli'); return; }
   if (!tarih) { showToast('⚠️ Tarih gerekli'); return; }
 
-  faturalar.unshift({
-    id: Date.now(),
-    kurum,
-    tarih,
-    aboneNo,
-    secili: false
-  });
-  saveFaturalar();
-  faturaFormKapat();
-  renderFaturaListe();
-  showToast('✅ Fatura eklendi');
+  if (faturaDuzenleId !== null) {
+    // Düzenleme modu
+    const f = faturalar.find(x => x.id === faturaDuzenleId);
+    if (f) { f.kurum = kurum; f.tarih = tarih; f.aboneNo = aboneNo; }
+    saveFaturalar();
+    faturaFormKapat();
+    renderFaturaListe();
+    showToast('✅ Fatura güncellendi');
+  } else {
+    // Ekleme modu
+    faturalar.unshift({ id: Date.now(), kurum, tarih, aboneNo, secili: false });
+    saveFaturalar();
+    faturaFormKapat();
+    renderFaturaListe();
+    showToast('✅ Fatura eklendi');
+  }
 }
 
 function faturaSecilenleriSil() {
@@ -2842,8 +2867,9 @@ function renderFaturaListe() {
              border:1.5px solid ${f.secili ? '#ff6b6b' : gecmis ? 'rgba(255,107,107,0.3)' : yakin ? 'rgba(255,184,0,0.4)' : '#003399'};
              border-radius:14px;padding:16px;
              cursor:${faturaSecimModu ? 'pointer' : 'default'};
-             transition:all 0.2s;box-sizing:border-box">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:${f.aboneNo ? '8px' : '6px'}">
+             transition:all 0.2s;box-sizing:border-box;position:relative">
+      ${!faturaSecimModu ? `<button onclick="event.stopPropagation();faturaDuzenle(${f.id})" style="position:absolute;top:12px;right:12px;background:rgba(0,85,179,0.25);border:1px solid rgba(90,150,220,0.4);color:#9fc0f0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;-webkit-tap-highlight-color:transparent">✏️ Düzenle</button>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:${f.aboneNo ? '8px' : '6px'};padding-right:${!faturaSecimModu ? '80px' : '0'}">
         ${faturaSecimModu ? `<div style="width:22px;height:22px;min-width:22px;border-radius:6px;border:2px solid ${f.secili ? '#ff6b6b' : '#003399'};background:${f.secili ? '#ff6b6b' : 'transparent'};display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700">${f.secili ? '✓' : ''}</div>` : ''}
         <div style="font-size:15px;font-weight:700;color:#e8eeff;word-break:break-word">${f.kurum}</div>
       </div>
