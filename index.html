@@ -1262,10 +1262,8 @@ function cleanFirma(aciklama) {
     border-radius: 12px;
     border: 1px solid #003399;
     overflow-x: auto;
-    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    touch-action: pan-x;
     max-width: 100%;
   }
   .period-btns::-webkit-scrollbar { display: none; }
@@ -1492,12 +1490,12 @@ function cleanFirma(aciklama) {
           <select id="hrc-ay-sec" onchange="setAyFilter(this.value)" style="background:#002266;color:#e8eeff;border:1px solid #003399;border-radius:10px;padding:8px 14px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;font-weight:600">
             <option value="all">📋 Tüm Aylar</option>
           </select>
-          <!-- Kart tipi seçici -->
-          <div class="period-btns" id="kart-tipi-btns">
-            <button class="period-btn active" onclick="setKartFilter('tumu')"  id="kart-tumu">💳 Tümü</button>
-            <button class="period-btn"        onclick="setKartFilter('banka')" id="kart-banka">🏦 Banka Kartı</button>
-            <button class="period-btn"        onclick="setKartFilter('kredi')" id="kart-kredi">💎 Kredi Kartı</button>
-          </div>
+          <!-- Kart tipi dropdown -->
+          <select id="hrc-kart-sec" onchange="setKartFilter(this.value)" style="background:#002266;color:#e8eeff;border:1px solid #003399;border-radius:10px;padding:8px 14px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;font-weight:600">
+            <option value="banka">🏦 Banka Kartı</option>
+            <option value="kredi">💎 Kredi Kartı</option>
+            <option value="tumu">💳 Tümü</option>
+          </select>
           <!-- İşlem türü butonları -->
           <div class="period-btns" id="islem-turu-btns">
             <button class="period-btn active" onclick="setIslemTuru('hepsi')"  id="itu-hepsi">Hepsi</button>
@@ -1521,7 +1519,7 @@ function cleanFirma(aciklama) {
           <h3 id="table-title">Harcama Listesi</h3>
           <span class="table-count" id="table-count">0 kayıt</span>
         </div>
-        <div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x">
+        <div style="overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch">
           <table style="min-width:560px">
             <thead>
               <tr>
@@ -1822,7 +1820,7 @@ let harcamalar = JSON.parse(localStorage.getItem('yk_harcamalar') || '[]');
 let charts = {};
 let currentAy = 'all';       // 'all' veya '2026-03'
 let currentIslemTuru = 'hepsi'; // 'hepsi' | 'normal' | 'eft' | 'atm'
-let currentKart = 'tumu';    // 'tumu' | 'banka' | 'kredi'
+let currentKart = 'banka';   // 'tumu' | 'banka' | 'kredi' - varsayılan banka kartı
 
 function updateAyDropdown() {
   const aylar = [...new Set(harcamalar.filter(h=>h.tarih).map(h=>h.tarih.slice(0,7)))].sort().reverse();
@@ -1924,6 +1922,8 @@ function checkLogin() {
     setTimeout(() => {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app').classList.add('active');
+      const kartSec = document.getElementById('hrc-kart-sec');
+      if (kartSec) kartSec.value = currentKart;
       renderTable();
       updateSummary();
     }, 400);
@@ -2105,10 +2105,8 @@ function getFiltered() {
 
 function setKartFilter(kart) {
   currentKart = kart;
-  ['tumu','banka','kredi'].forEach(k => {
-    document.getElementById('kart-' + k)?.classList.remove('active');
-  });
-  document.getElementById('kart-' + kart)?.classList.add('active');
+  const sel = document.getElementById('hrc-kart-sec');
+  if (sel && sel.value !== kart) sel.value = kart;
   renderTable();
 }
 
