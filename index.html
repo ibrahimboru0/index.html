@@ -587,7 +587,7 @@ function cleanFirma(aciklama) {
   .tab-icon { font-size: 18px; }
 
   /* CONTENT */
-  .content { padding: 28px; max-width: 1200px; margin: 0 auto; }
+  .content { padding: 16px; max-width: 1200px; margin: 0 auto; }
 
   /* SUMMARY CARDS */
   .summary-grid {
@@ -726,16 +726,17 @@ function cleanFirma(aciklama) {
     font-weight: 600;
   }
 
-  table { width: 100%; border-collapse: collapse; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
   thead th {
-    padding: 14px 20px;
+    padding: 10px 8px;
     text-align: left;
-    font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.8px;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
     color: rgba(255,255,255,0.4);
     background: #001f5c;
     border-bottom: 1px solid #003399;
+    overflow: hidden;
   }
 
   tbody tr {
@@ -747,9 +748,12 @@ function cleanFirma(aciklama) {
   tbody tr:hover { background: rgba(255,255,255,0.04); }
 
   td {
-    padding: 16px 20px;
-    font-size: 14px;
+    padding: 12px 8px;
+    font-size: 13px;
     color: #d0dcff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .sector-badge {
@@ -1474,16 +1478,16 @@ function cleanFirma(aciklama) {
           <h3 id="table-title">Harcama Listesi</h3>
           <span class="table-count" id="table-count">0 kayıt</span>
         </div>
-        <div style="overflow-x:auto">
+        <div>
           <table>
             <thead>
               <tr>
-                <th>Tarih</th>
-                <th>Saat</th>
-                <th>Firma</th>
-                <th>Sektör</th>
-                <th>Tutar</th>
-                <th></th>
+                <th style="width:22%">Tarih</th>
+                <th style="width:13%">Saat</th>
+                <th style="width:28%">Firma</th>
+                <th style="width:22%">Sektör</th>
+                <th style="width:12%;text-align:right">Tutar</th>
+                <th style="width:3%"></th>
               </tr>
             </thead>
             <tbody id="table-body"></tbody>
@@ -2087,15 +2091,16 @@ function renderTable() {
 
   tbody.innerHTML = data.map(h => {
     const s = SECTOR_MAP[h.sektor] || SECTOR_MAP.diger;
-    const dt = new Date(h.tarih).toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
+    const dt = new Date(h.tarih).toLocaleDateString('tr-TR', { day:'2-digit', month:'short' });
     const saatStr = h.saat ? h.saat.slice(0,5) : '—';
+    const tutarStr = '₺' + parseFloat(h.tutar).toLocaleString('tr-TR', {minimumFractionDigits:2});
     return `<tr>
-      <td style="color:var(--muted);font-size:13px;white-space:nowrap">${dt}</td>
-      <td style="color:#7a9acd;font-size:12px;white-space:nowrap;font-family:Outfit,monospace">${saatStr}</td>
-      <td><strong style="color:#e8eeff">${h.firma}</strong></td>
-      <td><span class="sector-badge ${s.cls}">${s.label}</span></td>
-      <td class="amount-cell" style="white-space:nowrap">₺${parseFloat(h.tutar).toLocaleString('tr-TR', {minimumFractionDigits:2})}</td>
-      <td><button class="delete-btn" onclick="deleteHarcama(${h.id})">🗑</button></td>
+      <td style="color:var(--muted);font-size:12px">${dt}</td>
+      <td style="color:#7a9acd;font-size:11px">${saatStr}</td>
+      <td><strong style="color:#e8eeff;font-size:13px">${h.firma}</strong></td>
+      <td><span class="sector-badge ${s.cls}" style="font-size:11px;padding:3px 7px">${s.label}</span></td>
+      <td style="text-align:right;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--danger)">${tutarStr}</td>
+      <td><button class="delete-btn" onclick="deleteHarcama(${h.id})" style="padding:2px 4px;font-size:14px">🗑</button></td>
     </tr>`;
   }).join('');
 
