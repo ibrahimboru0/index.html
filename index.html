@@ -308,14 +308,20 @@ function cleanFirma(aciklama) {
   }
 
   /* Notch/status bar alanı için arka plan */
-  .header::before {
-    content: '';
-    display: block;
-    height: env(safe-area-inset-top);
+  .header::before { display: none; }
+
+  /* HEADER */
+  .header {
     background: linear-gradient(135deg, var(--yk-blue), var(--yk-light-blue));
-    position: relative;
-    top: 0; left: 0; right: 0;
-    z-index: 2;
+    box-shadow: 0 4px 20px rgba(0,48,135,0.3);
+    position: sticky; top: 0; z-index: 50;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .header-inner {
+    height: 56px;
+    padding: 0 16px;
+    display: flex; align-items: center; justify-content: space-between;
   }
 
   /* ========== LOGIN ========== */
@@ -492,22 +498,6 @@ function cleanFirma(aciklama) {
   #app { display: none; }
   #app.active { display: block; }
 
-  /* HEADER */
-  .header {
-    background: linear-gradient(135deg, var(--yk-blue), var(--yk-light-blue));
-    box-shadow: 0 4px 20px rgba(0,48,135,0.3);
-    position: sticky; top: 0; z-index: 50;
-  }
-
-  .header-inner {
-    height: 56px;
-    padding: 0 16px;
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-    display: flex; align-items: center; justify-content: space-between;
-    position: relative; z-index: 1;
-  }
-
   .header-logo {
     display: flex; align-items: center; gap: 10px;
   }
@@ -565,20 +555,25 @@ function cleanFirma(aciklama) {
     background: #001f5c;
     border-bottom: 2px solid #003399;
     display: flex; gap: 0;
-    padding: 0 16px;
+    padding: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .tabs::-webkit-scrollbar { display: none; }
 
   .tab {
-    padding: 14px 20px;
-    font-size: 14px; font-weight: 600;
+    padding: 14px 16px;
+    font-size: 13px; font-weight: 600;
     color: rgba(255,255,255,0.5);
     cursor: pointer;
     border-bottom: 3px solid transparent;
     margin-bottom: -2px;
     transition: all 0.25s;
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 6px;
     white-space: nowrap;
+    flex-shrink: 0;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -1432,7 +1427,6 @@ function cleanFirma(aciklama) {
   </div>
 
   <div class="tabs">
-    <div style="display:flex">
       <div class="tab active" onclick="switchTab('harcamalar')" id="tab-harcamalar">
         <span class="tab-icon">💳</span> Harcamalar
       </div>
@@ -1445,7 +1439,6 @@ function cleanFirma(aciklama) {
       <div class="tab" onclick="switchTab('faturalar')" id="tab-faturalar">
         <span class="tab-icon">📄</span> Faturalar
       </div>
-    </div>
   </div>
 
   <div class="content">
