@@ -326,13 +326,19 @@ function cleanFirma(aciklama) {
     box-shadow: 0 4px 20px rgba(0,48,135,0.3);
     position: sticky; top: 0; z-index: 50;
     padding-top: env(safe-area-inset-top);
+    width: 100%; max-width: 100vw;
   }
 
   .header-inner {
     height: 56px;
     padding: 0 16px;
     display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 100vw;
+    box-sizing: border-box;
   }
+
+  .header-logo { flex-shrink: 1; min-width: 0; overflow: hidden; }
+  .header-actions { flex-shrink: 0; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
   /* ========== LOGIN ========== */
   #login-screen {
@@ -814,8 +820,9 @@ function cleanFirma(aciklama) {
   /* ========== CHARTS TAB ========== */
   .charts-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
     gap: 22px;
+    max-width: 100%;
   }
 
   .chart-card {
@@ -824,6 +831,9 @@ function cleanFirma(aciklama) {
     padding: 24px;
     border: 1px solid #003399;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .chart-card.full { grid-column: 1 / -1; }
@@ -832,7 +842,7 @@ function cleanFirma(aciklama) {
 
   .sektor-combo {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
     gap: 24px;
     align-items: center;
   }
@@ -921,12 +931,16 @@ function cleanFirma(aciklama) {
     position: relative;
     height: 260px;
     width: 100%;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .chart-wrapper-tall {
     position: relative;
     height: 200px;
     width: 100%;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   /* ========== TAKVİM ========== */
@@ -1438,7 +1452,7 @@ function cleanFirma(aciklama) {
         <div class="header-logo-icon">YK</div>
         <div class="header-title">Yapı<span>Kredi</span> · Harcama Takip</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div class="header-actions">
         <button onclick="silOnay()" style="background:rgba(255,80,80,0.15);border:1.5px solid rgba(255,80,80,0.4);color:#ff9090;padding:6px 10px;border-radius:10px;font-size:12px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">🗑 Sil</button>
         <button class="logout-btn" onclick="logout()">Çıkış</button>
       </div>
