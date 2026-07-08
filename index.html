@@ -1883,12 +1883,17 @@ function saveData() {
   localStorage.setItem('yk_harcamalar', JSON.stringify(harcamalar));
 }
 
-// Her açılışta duplicate kayıtları otomatik temizle
+// NOT: Otomatik "her açılışta duplicate temizle" kaldırıldı.
+// Sebep: Aynı gün + aynı tutar + aynı firma ile yapılan GERÇEK farklı işlemler
+// (örn. aynı gün 2 kez aynı ücretle toplu taşıma) ile "yanlışlıkla 2 kez eklenmiş
+// aynı kayıt" birbirinden ayırt edilemiyor (kredi kartı ekstrelerinde saat bilgisi yok).
+// Mükerrer önleme artık sadece PDF import anında (confirmImport), önceden kayıtlı
+// işlemlerin SAYISINI dikkate alan doğru mantıkla yapılıyor — bu, gerçek tekrarlı
+// işlemleri korurken aynı PDF'in yanlışlıkla 2 kez yüklenmesini hâlâ engelliyor.
 function cleanDuplicates() {
   const seen = new Set();
   const before = harcamalar.length;
   harcamalar = harcamalar.filter(h => {
-    // Saat varsa en güvenilir anahtar
     const firmaKey = normTR(h.firma || '').replace(/\s+/g,'').slice(0,20);
     const key = h.saat
       ? `${h.tarih}_${parseFloat(h.tutar).toFixed(2)}_${h.saat}`
@@ -1913,7 +1918,7 @@ if (!localStorage.getItem('yk_firma_fix_v1')) {
   localStorage.setItem('yk_firma_fix_v1', '1');
   saveData();
 }
-cleanDuplicates();
+// cleanDuplicates() artık otomatik çalışmıyor (yukarıdaki not'a bakın) — gerekirse elle çağrılabilir.
 
 // ===================== LOGIN =====================
 const PIN = '2121';
@@ -3585,26 +3590,36 @@ function confirmImport() {
   let added = 0;
   let skipped = 0;
 
+  // Bir işlem için benzersiz "imza" üret: saat varsa tarih+saat+tutar, yoksa tarih+firma+tutar
+  function buildSig(h) {
+    const tutarStr = Math.abs(parseFloat(h.tutar || 0)).toFixed(2);
+    if (h.saat) return h.tarih + '|s|' + h.saat + '|' + tutarStr;
+    const firmaNorm = normTR(h.firma || '').replace(/\s+/g, '');
+    return h.tarih + '|f|' + firmaNorm + '|' + tutarStr;
+  }
+
+  // ÖNEMLİ: mevcut kayıtların imza SAYISINI import başlamadan önce sabit bir anlık görüntü
+  // olarak al. Böylece aynı PDF içindeki GERÇEKTEN TEKRARLANAN işlemler (aynı gün aynı tutarla
+  // 2 kez otobüse binmek gibi) birbirini "mükerrer" sanıp yanlışlıkla silinmez — sadece
+  // önceden KAYITLI olan işlemlerle eşleşenler mükerrer sayılır.
+  const existingSigCounts = {};
+  harcamalar.forEach(h => {
+    const sig = buildSig(h);
+    existingSigCounts[sig] = (existingSigCounts[sig] || 0) + 1;
+  });
+
   pendingImport.forEach((h, idx) => {
     const chk = document.getElementById('ichk-' + idx);
     const sel = document.getElementById('isel-' + idx);
     if (!chk || !chk.checked) return;
 
-    // Akıllı duplicate kontrolü:
-    const hTutar = Math.abs(parseFloat(h.tutar || 0));
-
-    const isDuplicate = harcamalar.some(existing => {
-      if (existing.tarih !== h.tarih) return false;
-      if (Math.abs(parseFloat(existing.tutar) - hTutar) >= 0.01) return false;
-      // Saat varsa → tarih + saat + tutar üçlüsü yeterli (aynı saniyede aynı tutar = aynı işlem)
-      if (h.saat && existing.saat) return h.saat === existing.saat;
-      // Saat yoksa → firma karşılaştır
-      const hFirma = normTR(h.firma || '').replace(/\s+/g,'');
-      const eFirma = normTR(existing.firma || '').replace(/\s+/g,'');
-      return hFirma === eFirma;
-    });
-
-    if (isDuplicate) { skipped++; return; }
+    const sig = buildSig(h);
+    if (existingSigCounts[sig] > 0) {
+      // Önceden kayıtlı bir işlemle eşleşti → mükerrer, bu imzadan bir "hak" tüket
+      existingSigCounts[sig]--;
+      skipped++;
+      return;
+    }
 
     const newId = Math.max(0, ...harcamalar.map(x => x.id), 0) + added + 1;
     harcamalar.unshift({
