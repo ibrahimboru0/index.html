@@ -117,6 +117,25 @@ async function extractPdfItems(arrayBuffer) {
   return allItems;
 }
 
+// items (extractPdfItems çıktısı, koordinatla zaten satır/sütun gruplu) alıp
+// her satırı X sırasına göre birleştirerek düzgün metin satırları oluşturur.
+// Bu, kredi kartı ekstresi gibi kolon-bazlı PDF'lerde satırların dağılmasını önler.
+function buildRowLines(items) {
+  const rowMap = {};
+  for (const it of items) {
+    const key = (it.page || 1) + '_' + Math.round(it.y / 3) * 3;
+    if (!rowMap[key]) rowMap[key] = [];
+    rowMap[key].push(it);
+  }
+  const rows = Object.keys(rowMap).map(key => {
+    const [page, y] = key.split('_').map(Number);
+    const words = rowMap[key].slice().sort((a, b) => a.x - b.x);
+    return { page, y, text: words.map(w => w.str).join(' ') };
+  });
+  rows.sort((a, b) => a.page - b.page || a.y - b.y);
+  return rows.map(r => r.text).join('\n');
+}
+
 async function extractPdfText(arrayBuffer) {
   const lib = typeof pdfjsLib !== 'undefined' ? pdfjsLib : PDFJS;
   const pdf = await lib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
@@ -2984,17 +3003,20 @@ async function handlePdfUpload(event) {
       }
     }
 
-    // Önce metni çıkar, kredi kartı ekstresi mi kontrol et
-    const rawText = await extractPdfText(arrayBufferOrig.slice(0));
+    // Koordinatla zaten satır/sütun gruplu olan items'tan düzgün metin satırları inşa et.
+    // (extractPdfText yerine bunu kullanmak, kredi kartı ekstresi gibi kolon-bazlı
+    //  PDF'lerde tarih/firma/tutarın ayrı satırlara dağılmasını önler.)
+    const reconstructedText = buildRowLines(items);
     let parsed;
     let kartTipi = 'banka';
 
-    if (isKrediKartiEkstre(rawText)) {
+    if (isKrediKartiEkstre(reconstructedText)) {
       kartTipi = 'kredi';
-      parsed = parseKrediKarti(rawText);
+      parsed = parseKrediKarti(reconstructedText);
     } else {
       parsed = parseYKByCoords(items);
       if (parsed.length === 0) {
+        const rawText = await extractPdfText(arrayBufferOrig.slice(0));
         parsed = parseYKLines(rawText);
       }
     }
@@ -3613,6 +3635,7 @@ function confirmImport() {
 
 // ===================== TAKVİM =====================
 let takvimAy = null; // 'YYYY-MM' formatında
+let currentTakvimKart = 'tumu'; // 'tumu' | 'banka' | 'kredi' - takvimde varsayılan: tümü (banka+kredi birleşik)
 
 function renderTakvim() {
   const container = document.getElementById('takvim-container');
@@ -3626,11 +3649,14 @@ function renderTakvim() {
   const ayAdi = MONTH_NAMES[ay - 1] + ' ' + yil;
 
   const gunMap = {};
-  harcamalar.filter(h => h.tarih && h.tarih.startsWith(takvimAy)).forEach(h => {
-    if (!gunMap[h.tarih]) gunMap[h.tarih] = { tutar: 0, items: [] };
-    gunMap[h.tarih].tutar += parseFloat(h.tutar || 0);
-    gunMap[h.tarih].items.push(h);
-  });
+  harcamalar
+    .filter(h => h.tarih && h.tarih.startsWith(takvimAy))
+    .filter(h => currentTakvimKart === 'tumu' ? true : currentTakvimKart === 'kredi' ? h.hesap === 'kredi' : (h.hesap || 'vadesiz') !== 'kredi')
+    .forEach(h => {
+      if (!gunMap[h.tarih]) gunMap[h.tarih] = { tutar: 0, items: [] };
+      gunMap[h.tarih].tutar += parseFloat(h.tutar || 0);
+      gunMap[h.tarih].items.push(h);
+    });
 
   const toplamTutar = Object.values(gunMap).reduce((s, g) => s + g.tutar, 0);
   const harcamaGunSayisi = Object.keys(gunMap).length;
@@ -3699,6 +3725,14 @@ function renderTakvim() {
         <button onclick="takvimAyDegis(1)">›</button>
       </div>
 
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <select id="tvm-kart-sec" onchange="setTakvimKartFilter(this.value)" style="background:#002266;color:#e8eeff;border:1px solid #003399;border-radius:10px;padding:8px 14px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;font-weight:600">
+          <option value="tumu"  ${currentTakvimKart==='tumu'?'selected':''}>💳 Tümü (Banka + Kredi)</option>
+          <option value="banka" ${currentTakvimKart==='banka'?'selected':''}>🏦 Sadece Banka Kartı</option>
+          <option value="kredi" ${currentTakvimKart==='kredi'?'selected':''}>💎 Sadece Kredi Kartı</option>
+        </select>
+      </div>
+
       <div class="takvim-ozet">
         <div class="takvim-ozet-item">
           <div class="takvim-ozet-label">Aylık Toplam</div>
@@ -3729,6 +3763,11 @@ function renderTakvim() {
     </div>`;
 }
 
+function setTakvimKartFilter(kart) {
+  currentTakvimKart = kart;
+  renderTakvim();
+}
+
 function takvimAyDegis(yon) {
   if (!takvimAy) return;
   const [y, m] = takvimAy.split('-').map(Number);
@@ -3739,11 +3778,14 @@ function takvimAyDegis(yon) {
 
 function showTakvimDetay(tarih) {
   const gunData = {};
-  harcamalar.filter(h => h.tarih === tarih).forEach(h => {
-    if (!gunData[tarih]) gunData[tarih] = { tutar: 0, items: [] };
-    gunData[tarih].tutar += parseFloat(h.tutar || 0);
-    gunData[tarih].items.push(h);
-  });
+  harcamalar
+    .filter(h => h.tarih === tarih)
+    .filter(h => currentTakvimKart === 'tumu' ? true : currentTakvimKart === 'kredi' ? h.hesap === 'kredi' : (h.hesap || 'vadesiz') !== 'kredi')
+    .forEach(h => {
+      if (!gunData[tarih]) gunData[tarih] = { tutar: 0, items: [] };
+      gunData[tarih].tutar += parseFloat(h.tutar || 0);
+      gunData[tarih].items.push(h);
+    });
 
   const data = gunData[tarih];
   if (!data) return;
@@ -3758,12 +3800,16 @@ function showTakvimDetay(tarih) {
   document.getElementById('td-liste').innerHTML = sorted.map(h => {
     const sm = SECTOR_MAP[h.sektor] || { label: h.sektor, cls: 'sector-other' };
     const saat = h.saat ? h.saat.slice(0,5) : '—';
+    const krediMi = h.hesap === 'kredi';
+    const kartRozeti = krediMi
+      ? '<span style="font-size:10px;font-weight:700;color:#c9a8ff;background:rgba(160,110,255,0.15);border:1px solid rgba(160,110,255,0.4);border-radius:6px;padding:1px 6px;flex-shrink:0">💎 Kredi</span>'
+      : '<span style="font-size:10px;font-weight:700;color:#9fc0f0;background:rgba(90,150,220,0.12);border:1px solid rgba(90,150,220,0.35);border-radius:6px;padding:1px 6px;flex-shrink:0">🏦 Banka</span>';
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);gap:12px">
       <div style="display:flex;align-items:center;gap:10px;min-width:0">
         <span class="sector-badge ${sm.cls}" style="white-space:nowrap;flex-shrink:0">${sm.label}</span>
         <div style="min-width:0">
           <div style="font-size:13px;font-weight:700;color:#e8eeff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.firma}</div>
-          <div style="font-size:11px;color:#7a9acd">${saat}</div>
+          <div style="font-size:11px;color:#7a9acd;display:flex;align-items:center;gap:6px">${saat} ${kartRozeti}</div>
         </div>
       </div>
       <div style="font-size:14px;font-weight:800;color:#ff6b6b;white-space:nowrap">${fmt(h.tutar)}</div>
