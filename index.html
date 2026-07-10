@@ -75,6 +75,13 @@ async function extractPdfItems(arrayBuffer) {
     const raw = [];
     for (const it of content.items) {
       if (!it.str || !it.str.trim()) continue;
+      // Döndürülmüş/dikey metni hariç tut (örn. sayfa kenarında 90° yazılmış
+      // "YAPI ve KREDİ BANKASI A.Ş..." künye yazısı). Bunların y-koordinatları
+      // işlem tablosuyla çakışıp satırların başına sızarak tarih regex'ini
+      // bozabiliyor. Yatay metinde transform[1] ve transform[2] ~0'dır;
+      // döndürülmüş metinde bunlar belirgin şekilde sıfırdan farklıdır.
+      const tf = it.transform;
+      if (Math.abs(tf[1]) > 0.01 || Math.abs(tf[2]) > 0.01) continue;
       const x = it.transform[4];
       const y = Math.round((vp.height - it.transform[5]) * 10) / 10;
       raw.push({ str: it.str, x: Math.round(x * 10) / 10, y, w: it.width || 0 });
@@ -3110,9 +3117,12 @@ function parseKrediKarti(rawText) {
     let rest = line.slice(m[0].length).trim();
 
     // Tutarı bul (satırın sonundaki Türkçe sayı: 120,00 veya 1.234,56)
-    // Ödeme satırlarında tutar + ile başlar (+470,70) → bunları ATLA
+    // Ödeme (borç kapatma) satırlarında tutar + ile başlar: "+470,70" → bunları ATLA.
+    // NOT: Sadece "+" işaretine bakılır — "ÖDEME" kelimesini aramak YANLIŞ, çünkü
+    // "FATURA ÖDEME ÜCRETİ" gibi gerçek masraf satırları da "ÖDEME" kelimesini içerir
+    // ve borç kapatmayla hiçbir ilgisi yoktur (bu bir hizmet ücretidir, harcamadır).
     const odemeRe = /\+\s*[\d\.]+,\d{2}/;
-    if (odemeRe.test(rest) || /ODEME/.test(normTR(rest))) continue; // ödeme satırı, harcama değil
+    if (odemeRe.test(rest)) continue; // gerçek borç kapatma satırı, harcama değil
 
     // Son tutarı yakala
     const tutarMatches = [...rest.matchAll(/(-?[\d\.]+,\d{2})/g)];
