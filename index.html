@@ -1532,8 +1532,11 @@ function cleanFirma(aciklama) {
             <button class="period-btn"        onclick="setIslemTuru('masraf')" id="itu-masraf">🏦 Masraf</button>
           </div>
         </div>
-        <!-- Sağ: PDF yükle + PDF kontrol -->
+        <!-- Sağ: Harcama ekle + PDF yükle -->
         <div style="display:flex;gap:10px;align-items:center;">
+          <button class="upload-btn" style="background:linear-gradient(135deg,#FFB800,#e6a500)" onclick="openModal()">
+            ➕ Harcama Ekle
+          </button>
           <input type="file" id="pdf-file-input" accept=".pdf" onchange="handlePdfUpload(event)">
           <button class="upload-btn" onclick="document.getElementById('pdf-file-input').click()">
             📄 PDF Yükle
@@ -1675,24 +1678,47 @@ function cleanFirma(aciklama) {
 
 <!-- SİL ONAY MODAL -->
 <div id="sil-onay-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,10,40,0.85);align-items:center;justify-content:center;padding:20px">
-  <div style="background:#002266;border:1.5px solid rgba(255,80,80,0.4);border-radius:20px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+  <div style="background:#002266;border:1.5px solid rgba(255,80,80,0.4);border-radius:20px;padding:28px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
     <div style="font-size:40px;text-align:center;margin-bottom:12px">🗑️</div>
     <div style="font-size:17px;font-weight:800;color:#e8eeff;text-align:center;margin-bottom:20px">Verileri Sil</div>
 
-    <!-- Seçim butonları -->
+    <!-- ADIM 1: Hesap türü seçimi -->
     <div id="sil-secim-panel" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
-      <button onclick="silSecimGoster('tarih')" style="padding:14px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#e8eeff;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
-        📅 Seçili Tarihi Sil
-        <div style="font-size:11px;color:#7a9acd;margin-top:3px">Belirli bir tarihin harcamalarını sil</div>
+      <button onclick="silSecimGoster('banka')" style="padding:14px;background:rgba(90,150,220,0.1);border:1.5px solid rgba(90,150,220,0.3);border-radius:12px;color:#9fc0f0;font-size:14px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
+        🏦 Banka Kartı Harcamaları
+        <div style="font-size:11px;color:#7a9acd;margin-top:3px;font-weight:400">Tarih veya aya göre sil</div>
       </button>
-      <button onclick="silSecimGoster('ay')" style="padding:14px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#e8eeff;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
-        🗓️ Seçili Ayı Sil
-        <div style="font-size:11px;color:#7a9acd;margin-top:3px">Bir ayın tüm harcamalarını sil</div>
+      <button onclick="silSecimGoster('kredi')" style="padding:14px;background:rgba(160,110,255,0.1);border:1.5px solid rgba(160,110,255,0.3);border-radius:12px;color:#c9a8ff;font-size:14px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
+        💎 Kredi Kartı Ekstresi
+        <div style="font-size:11px;color:#a08acb;margin-top:3px;font-weight:400">Yüklediğin bir ekstreyi baştan sona sil</div>
       </button>
       <button onclick="silSecimGoster('tumü')" style="padding:14px;background:rgba(255,80,80,0.1);border:1.5px solid rgba(255,80,80,0.3);border-radius:12px;color:#ff8080;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
-        💥 Tümünü Sil
-        <div style="font-size:11px;color:rgba(255,128,128,0.7);margin-top:3px">Tüm kayıtları kalıcı olarak sil</div>
+        💥 Tüm Verileri Sil
+        <div style="font-size:11px;color:rgba(255,128,128,0.7);margin-top:3px;font-weight:400">Hem banka hem kredi kartı — kalıcı olarak</div>
       </button>
+    </div>
+
+    <!-- ADIM 2a: Banka kartı alt-seçimi -->
+    <div id="sil-banka-secim-panel" style="display:none;flex-direction:column;gap:10px;margin-bottom:20px">
+      <button onclick="silSecimGoster('banka-tarih')" style="padding:14px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#e8eeff;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
+        📅 Seçili Tarihi Sil
+        <div style="font-size:11px;color:#7a9acd;margin-top:3px;font-weight:400">Belirli bir tarihin harcamalarını sil</div>
+      </button>
+      <button onclick="silSecimGoster('banka-ay')" style="padding:14px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#e8eeff;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
+        🗓️ Seçili Ayı Sil
+        <div style="font-size:11px;color:#7a9acd;margin-top:3px;font-weight:400">Bir ayın tüm banka kartı harcamalarını sil</div>
+      </button>
+      <button onclick="silSecimGoster('banka-tumu')" style="padding:14px;background:rgba(255,80,80,0.1);border:1.5px solid rgba(255,80,80,0.3);border-radius:12px;color:#ff8080;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer;text-align:left">
+        💥 Tüm Banka Kartı Kayıtlarını Sil
+      </button>
+      <button onclick="silGeriDon()" style="padding:10px;background:none;border:none;color:#7a9acd;font-size:13px;cursor:pointer">← Geri</button>
+    </div>
+
+    <!-- ADIM 2b: Kredi kartı ekstre seçimi -->
+    <div id="sil-kredi-panel" style="display:none;margin-bottom:20px">
+      <div style="font-size:12px;color:#7a9acd;margin-bottom:10px;font-weight:600">HANGİ EKSTREYİ SİLMEK İSTİYORSUN?</div>
+      <div id="sil-kredi-liste" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <button onclick="silGeriDon()" style="padding:10px;background:none;border:none;color:#7a9acd;font-size:13px;cursor:pointer;width:100%">← Geri</button>
     </div>
 
     <!-- Tarih seçici panel -->
@@ -1760,8 +1786,9 @@ function cleanFirma(aciklama) {
       <div class="form-group">
         <label>Hesap Türü</label>
         <select id="f-hesap">
-          <option value="vadesiz">Vadesiz Hesap</option>
-          <option value="esnek">Esnek Hesap</option>
+          <option value="vadesiz">🏦 Banka Kartı (Vadesiz Hesap)</option>
+          <option value="esnek">🏦 Banka Kartı (Esnek Hesap)</option>
+          <option value="kredi">💎 Kredi Kartı</option>
         </select>
       </div>
     </div>
@@ -1974,13 +2001,18 @@ function checkLogin() {
   }
 }
 
-let silMod = ''; // 'tarih' | 'ay' | 'tumü'
+let silMod = ''; // 'banka-tarih' | 'banka-ay' | 'banka-tumu' | 'kredi-ekstre' | 'tumü'
+
+let silSeciliEkstreAy = null;
 
 function silOnay() {
   // Panelleri sıfırla
   silMod = '';
+  silSeciliEkstreAy = null;
   document.getElementById('sil-secim-panel').style.display = 'flex';
   document.getElementById('sil-secim-panel').style.flexDirection = 'column';
+  document.getElementById('sil-banka-secim-panel').style.display = 'none';
+  document.getElementById('sil-kredi-panel').style.display = 'none';
   document.getElementById('sil-tarih-panel').style.display = 'none';
   document.getElementById('sil-ay-panel').style.display = 'none';
   document.getElementById('sil-onay-btns').style.display = 'none';
@@ -1988,22 +2020,65 @@ function silOnay() {
   document.getElementById('sil-onay-modal').style.display = 'flex';
 }
 
+function silGeriDon() {
+  silOnay();
+}
+
 function silSecimGoster(mod) {
   silMod = mod;
   document.getElementById('sil-secim-panel').style.display = 'none';
-  document.getElementById('sil-tarih-panel').style.display  = mod === 'tarih' ? 'block' : 'none';
-  document.getElementById('sil-ay-panel').style.display     = mod === 'ay'    ? 'block' : 'none';
-  document.getElementById('sil-onay-btns').style.display    = mod === 'tumü'  ? 'flex'  : 'none';
+  document.getElementById('sil-banka-secim-panel').style.display = (mod === 'banka') ? 'flex' : 'none';
+  document.getElementById('sil-kredi-panel').style.display = (mod === 'kredi') ? 'block' : 'none';
+  document.getElementById('sil-tarih-panel').style.display  = (mod === 'banka-tarih') ? 'block' : 'none';
+  document.getElementById('sil-ay-panel').style.display     = (mod === 'banka-ay') ? 'block' : 'none';
+  document.getElementById('sil-onay-btns').style.display    = (mod === 'tumü' || mod === 'banka-tumu') ? 'flex' : 'none';
 
-  if (mod === 'tarih') {
+  if (mod === 'banka') {
+    document.getElementById('sil-vazgec').style.display = 'none';
+  }
+
+  if (mod === 'kredi') {
+    document.getElementById('sil-vazgec').style.display = 'none';
+    // Kredi kartına ait ekstreleri (ekstreAy'e göre grupla) listele
+    const krediKayitlar = harcamalar.filter(h => h.hesap === 'kredi');
+    const gruplar = {};
+    krediKayitlar.forEach(h => {
+      const key = h.ekstreAy || 'bilinmeyen';
+      if (!gruplar[key]) gruplar[key] = { adet: 0, toplam: 0 };
+      gruplar[key].adet++;
+      gruplar[key].toplam += parseFloat(h.tutar || 0);
+    });
+    const keys = Object.keys(gruplar).sort().reverse();
+    const liste = document.getElementById('sil-kredi-liste');
+    if (keys.length === 0) {
+      liste.innerHTML = `<div style="text-align:center;color:#7a9acd;font-size:13px;padding:16px 0">Henüz kredi kartı ekstresi yüklenmemiş</div>`;
+    } else {
+      liste.innerHTML = keys.map(key => {
+        let etiket = 'Bilinmeyen Ekstre';
+        if (key !== 'bilinmeyen') {
+          const [y, m] = key.split('-');
+          etiket = MONTH_NAMES[parseInt(m) - 1] + ' ' + y + ' Ekstresi';
+        }
+        const fmt = n => '₺' + n.toLocaleString('tr-TR', { minimumFractionDigits: 2 });
+        return `<button onclick="silKrediEkstreSec('${key}')" style="padding:14px;background:rgba(160,110,255,0.08);border:1.5px solid rgba(160,110,255,0.25);border-radius:12px;color:#e8eeff;font-size:14px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;text-align:left;width:100%">
+          💎 ${etiket}
+          <div style="font-size:11px;color:#a08acb;margin-top:3px;font-weight:400">${gruplar[key].adet} işlem · ${fmt(gruplar[key].toplam)}</div>
+        </button>`;
+      }).join('');
+    }
+  }
+
+  if (mod === 'banka-tarih') {
+    document.getElementById('sil-vazgec').style.display = 'block';
     document.getElementById('sil-tarih-input').value = '';
     document.getElementById('sil-tarih-preview').textContent = '';
     document.getElementById('sil-tarih-input').onchange = silTarihPreview;
     document.getElementById('sil-onay-btns').style.display = 'none';
   }
-  if (mod === 'ay') {
-    // Ay listesini doldur
-    const aylar = [...new Set(harcamalar.map(h => h.tarih?.slice(0,7)).filter(Boolean))].sort().reverse();
+  if (mod === 'banka-ay') {
+    document.getElementById('sil-vazgec').style.display = 'block';
+    // Sadece banka kartı kayıtlarından ay listesini doldur
+    const aylar = [...new Set(harcamalar.filter(h => h.hesap !== 'kredi').map(h => h.tarih?.slice(0,7)).filter(Boolean))].sort().reverse();
     const sel = document.getElementById('sil-ay-input');
     sel.innerHTML = '<option value="">-- Ay seç --</option>' +
       aylar.map(a => {
@@ -2013,28 +2088,49 @@ function silSecimGoster(mod) {
     document.getElementById('sil-ay-preview').textContent = '';
     document.getElementById('sil-onay-btns').style.display = 'none';
   }
-  if (mod === 'tumü') {
-    document.getElementById('sil-uyari').textContent = 'Tüm kayıtlar kalıcı olarak silinecek!';
+  if (mod === 'banka-tumu') {
+    document.getElementById('sil-vazgec').style.display = 'block';
+    const sayi = harcamalar.filter(h => h.hesap !== 'kredi').length;
+    document.getElementById('sil-uyari').textContent = `Tüm banka kartı kayıtları (${sayi} işlem) kalıcı olarak silinecek!`;
   }
+  if (mod === 'tumü') {
+    document.getElementById('sil-uyari').textContent = 'Tüm kayıtlar (banka + kredi kartı) kalıcı olarak silinecek!';
+  }
+}
+
+function silKrediEkstreSec(ekstreAy) {
+  silMod = 'kredi-ekstre';
+  silSeciliEkstreAy = ekstreAy;
+  document.getElementById('sil-kredi-panel').style.display = 'none';
+  document.getElementById('sil-onay-btns').style.display = 'flex';
+  document.getElementById('sil-vazgec').style.display = 'block';
+
+  const sayi = harcamalar.filter(h => h.hesap === 'kredi' && (h.ekstreAy || 'bilinmeyen') === ekstreAy).length;
+  let etiket = 'Bilinmeyen Ekstre';
+  if (ekstreAy !== 'bilinmeyen') {
+    const [y, m] = ekstreAy.split('-');
+    etiket = MONTH_NAMES[parseInt(m) - 1] + ' ' + y + ' Ekstresi';
+  }
+  document.getElementById('sil-uyari').textContent = `💎 ${etiket} — ${sayi} işlemin tamamı silinecek`;
 }
 
 function silTarihPreview() {
   const val = document.getElementById('sil-tarih-input').value;
   if (!val) return;
-  const sayi = harcamalar.filter(h => h.tarih === val).length;
-  document.getElementById('sil-tarih-preview').textContent = sayi > 0 ? `${sayi} işlem silinecek` : 'Bu tarihte kayıt yok';
-  document.getElementById('sil-uyari').textContent = `${val.split('-').reverse().join('/')} tarihindeki ${sayi} işlem silinecek`;
+  const sayi = harcamalar.filter(h => h.tarih === val && h.hesap !== 'kredi').length;
+  document.getElementById('sil-tarih-preview').textContent = sayi > 0 ? `${sayi} işlem silinecek` : 'Bu tarihte banka kartı kaydı yok';
+  document.getElementById('sil-uyari').textContent = `${val.split('-').reverse().join('/')} tarihindeki ${sayi} banka kartı işlemi silinecek`;
   document.getElementById('sil-onay-btns').style.display = sayi > 0 ? 'flex' : 'none';
 }
 
 function silAyPreview() {
   const val = document.getElementById('sil-ay-input').value;
   if (!val) return;
-  const sayi = harcamalar.filter(h => h.tarih?.startsWith(val)).length;
+  const sayi = harcamalar.filter(h => h.tarih?.startsWith(val) && h.hesap !== 'kredi').length;
   const [y,m] = val.split('-');
   const ayAd = MONTH_NAMES[parseInt(m)-1] + ' ' + y;
-  document.getElementById('sil-ay-preview').textContent = sayi > 0 ? `${sayi} işlem silinecek` : 'Bu ayda kayıt yok';
-  document.getElementById('sil-uyari').textContent = `${ayAd} ayındaki ${sayi} işlem silinecek`;
+  document.getElementById('sil-ay-preview').textContent = sayi > 0 ? `${sayi} işlem silinecek` : 'Bu ayda banka kartı kaydı yok';
+  document.getElementById('sil-uyari').textContent = `${ayAd} ayındaki ${sayi} banka kartı işlemi silinecek`;
   document.getElementById('sil-onay-btns').style.display = sayi > 0 ? 'flex' : 'none';
 }
 
@@ -2046,16 +2142,24 @@ function silEvet() {
   if (silMod === 'tumü') {
     harcamalar = [];
     showToast('🗑️ Tüm veriler silindi');
-  } else if (silMod === 'tarih') {
+  } else if (silMod === 'banka-tarih') {
     const val = document.getElementById('sil-tarih-input').value;
     const once = harcamalar.length;
-    harcamalar = harcamalar.filter(h => h.tarih !== val);
+    harcamalar = harcamalar.filter(h => !(h.tarih === val && h.hesap !== 'kredi'));
     showToast(`🗑️ ${once - harcamalar.length} işlem silindi`);
-  } else if (silMod === 'ay') {
+  } else if (silMod === 'banka-ay') {
     const val = document.getElementById('sil-ay-input').value;
     const once = harcamalar.length;
-    harcamalar = harcamalar.filter(h => !h.tarih?.startsWith(val));
+    harcamalar = harcamalar.filter(h => !(h.tarih?.startsWith(val) && h.hesap !== 'kredi'));
     showToast(`🗑️ ${once - harcamalar.length} işlem silindi`);
+  } else if (silMod === 'banka-tumu') {
+    const once = harcamalar.length;
+    harcamalar = harcamalar.filter(h => h.hesap === 'kredi');
+    showToast(`🗑️ ${once - harcamalar.length} banka kartı işlemi silindi`);
+  } else if (silMod === 'kredi-ekstre') {
+    const once = harcamalar.length;
+    harcamalar = harcamalar.filter(h => !(h.hesap === 'kredi' && (h.ekstreAy || 'bilinmeyen') === silSeciliEkstreAy));
+    showToast(`🗑️ ${once - harcamalar.length} kredi kartı işlemi silindi — ekstreyi tekrar yükleyebilirsin`);
   }
   saveData();
   document.getElementById('sil-onay-modal').style.display = 'none';
@@ -2239,7 +2343,7 @@ function saveHarcama() {
   if (!tarih || !tutar || !firma) { alert('Tarih, tutar ve firma zorunlu!'); return; }
 
   const newId = Math.max(0, ...harcamalar.map(h=>h.id)) + 1;
-  harcamalar.unshift({ id: newId, tarih, firma, sektor, hesap, tutar, aciklama });
+  harcamalar.unshift({ id: newId, tarih, saat: '', firma, sektor, hesap, tutar, aciklama });
   saveData();
   closeModal();
   renderTable();
@@ -3095,10 +3199,25 @@ function isKrediKartiEkstre(rawText) {
   return skor >= 3;
 }
 
+// Ekstredeki "Hesap Kesim Tarihi" satırından, bu ekstrenin hangi ay ekstresi olduğunu çıkar.
+// Önemli: bir ekstre 2 farklı takvim ayına yayılan işlemler içerebilir (örn. 09 Haziran - 05 Temmuz),
+// bu yüzden işlemleri kendi tarihlerine göre değil, ekstrenin KESİM ayına göre etiketliyoruz.
+// Böylece "bu ekstreyi tamamen sil" dendiğinde, içindeki TÜM işlemler (hangi aya ait olursa olsun)
+// doğru şekilde bir bütün olarak bulunup silinebiliyor.
+function extractEkstreAy(rawText) {
+  const m = rawText.match(/Hesap\s+Kesim\s+Tarihi\s*:?\s*(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(\d{4})/i);
+  if (!m) return null;
+  const ayAd = normTR(m[2]);
+  const ayNo = TR_AYLAR[ayAd];
+  if (!ayNo) return null;
+  return `${m[3]}-${ayNo}`;
+}
+
 // Kredi kartı ekstresinden harcamaları çıkar (sadece giderler, ödemeler atlanır)
 function parseKrediKarti(rawText) {
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const results = [];
+  const ekstreAy = extractEkstreAy(rawText);
   // Tarih formatı: "18 Mart 2026" veya "03 Nisan 2026"
   const dateRe = /^(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(\d{4})\b/;
 
@@ -3148,7 +3267,7 @@ function parseKrediKarti(rawText) {
 
     results.push({
       tarih, saat: '', firma, sektor,
-      hesap: 'kredi', tutar: Math.abs(tutar), aciklama: ''
+      hesap: 'kredi', tutar: Math.abs(tutar), aciklama: '', ekstreAy
     });
   }
   return results;
@@ -3640,7 +3759,8 @@ function confirmImport() {
       sektor: sel ? sel.value : h.sektor,
       hesap: h.hesap || 'vadesiz',
       tutar: Math.abs(h.tutar),
-      aciklama: ''
+      aciklama: '',
+      ekstreAy: h.ekstreAy || null
     });
     added++;
   });
