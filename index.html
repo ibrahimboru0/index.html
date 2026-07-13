@@ -3125,10 +3125,12 @@ async function handlePdfUpload(event) {
     const reconstructedText = buildRowLines(items);
     let parsed;
     let kartTipi = 'banka';
+    let resmiToplam = null;
 
     if (isKrediKartiEkstre(reconstructedText)) {
       kartTipi = 'kredi';
       parsed = parseKrediKarti(reconstructedText);
+      resmiToplam = extractEkstreResmiToplam(reconstructedText);
     } else {
       parsed = parseYKByCoords(items);
       if (parsed.length === 0) {
@@ -3145,7 +3147,7 @@ async function handlePdfUpload(event) {
 
     showUploadToast('✅', `${parsed.length} İşlem Bulundu!`, 'Önizleme açılıyor...', 100);
     hideUploadToast();
-    openImportModal(parsed, file.name, { hamGiden, hamGelen, hamSatirlar, kartTipi });
+    openImportModal(parsed, file.name, { hamGiden, hamGelen, hamSatirlar, kartTipi, resmiToplam });
 
   } catch (err) {
     console.error('PDF parse error:', err);
@@ -3211,6 +3213,14 @@ function extractEkstreAy(rawText) {
   const ayNo = TR_AYLAR[ayAd];
   if (!ayNo) return null;
   return `${m[3]}-${ayNo}`;
+}
+
+// Ekstrede yazan resmi "Dönem İçi Harcamalar" tutarını çıkar — sistemin bulduğu
+// toplamla karşılaştırıp hiçbir işlemin sessizce kaybolmadığını doğrulamak için kullanılır.
+function extractEkstreResmiToplam(rawText) {
+  const m = rawText.match(/D[öo]nem\s+[İIi]çi\s+Harcamalar\s*:?\s*([\d\.]+,\d{2})/i);
+  if (!m) return null;
+  return parseFloat(m[1].replace(/\./g, '').replace(',', '.'));
 }
 
 // Kredi kartı ekstresinden harcamaları çıkar (sadece giderler, ödemeler atlanır)
@@ -3631,9 +3641,9 @@ function openImportModal(parsed, filename, ham) {
   const parsedToplam = parsed.reduce((s, h) => s + Math.abs(parseFloat(h.tutar)), 0);
   const parsedStr = '₺' + parsedToplam.toLocaleString('tr-TR', {minimumFractionDigits:2});
 
-  // Ham PDF toplamı satır listesi (küçük, açılır)
+  // Ham PDF toplamı satır listesi (küçük, açılır) — sadece BANKA KARTI hesap hareketleri için
   let hamHtml = '';
-  if (ham) {
+  if (ham && ham.kartTipi !== 'kredi' && ham.hamSatirlar) {
     const hamStr   = '₺' + ham.hamGiden.toLocaleString('tr-TR', {minimumFractionDigits:2});
     const gelenStr = '₺' + ham.hamGelen.toLocaleString('tr-TR', {minimumFractionDigits:2});
     const farkVal  = ham.hamGiden - parsedToplam;
@@ -3672,7 +3682,47 @@ function openImportModal(parsed, filename, ham) {
     </div>`;
   }
 
+  // Kredi kartı ekstresi için: ekstrede yazan resmi "Dönem İçi Harcamalar" toplamıyla
+  // sistemin bulduğu toplamı otomatik karşılaştır — hiçbir işlemin sessizce kaybolmadığını doğrula.
+  let krediKontrolHtml = '';
+  if (ham && ham.kartTipi === 'kredi') {
+    if (ham.resmiToplam !== null && ham.resmiToplam !== undefined) {
+      const resmiStr = '₺' + ham.resmiToplam.toLocaleString('tr-TR', {minimumFractionDigits:2});
+      const fark = ham.resmiToplam - parsedToplam;
+      const eslesiyor = Math.abs(fark) < 0.01;
+      const farkStr = '₺' + Math.abs(fark).toLocaleString('tr-TR', {minimumFractionDigits:2});
+
+      krediKontrolHtml = `
+      <div style="background:${eslesiyor ? 'rgba(0,184,148,0.1)' : 'rgba(255,107,107,0.12)'};border:1px solid ${eslesiyor ? 'rgba(0,184,148,0.35)' : 'rgba(255,107,107,0.4)'};border-radius:12px;padding:14px 16px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:${eslesiyor ? '#4fd1a5' : '#ff9090'};letter-spacing:0.5px;margin-bottom:8px">
+          ${eslesiyor ? '✅ EKSTRE TOPLAMI DOĞRULANDI' : '⚠️ EKSTRE TOPLAMI TUTMUYOR — KONTROL ET'}
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:10px;color:#7a9acd">Ekstrede Yazan (Dönem İçi Harcamalar)</div>
+            <div style="font-size:18px;font-weight:800;color:#e8eeff">${resmiStr}</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#7a9acd">Sistemin Bulduğu Toplam</div>
+            <div style="font-size:18px;font-weight:800;color:#FFB800">${parsedStr}</div>
+          </div>
+          ${!eslesiyor ? `<div>
+            <div style="font-size:10px;color:#7a9acd">Fark</div>
+            <div style="font-size:18px;font-weight:800;color:#ff6b6b">${farkStr}</div>
+          </div>` : ''}
+        </div>
+        ${!eslesiyor ? `<div style="font-size:12px;color:#ffb0b0;margin-top:10px;line-height:1.5">Bazı işlemler PDF'ten okunamamış olabilir. Yine de devam edebilirsin ama aşağıdaki listeyi ekstreyle karşılaştırman önerilir.</div>` : `<div style="font-size:12px;color:#8fe0c7;margin-top:8px">Ekstredeki tüm harcamalar eksiksiz okundu.</div>`}
+      </div>`;
+    } else {
+      krediKontrolHtml = `
+      <div style="background:rgba(255,184,0,0.08);border:1px solid rgba(255,184,0,0.3);border-radius:12px;padding:12px 16px;margin-bottom:12px">
+        <div style="font-size:12px;color:#FFB800">ℹ️ Ekstredeki resmi toplam tutar bulunamadı, otomatik karşılaştırma yapılamadı. Aşağıdaki listeyi ekstreyle elle karşılaştırman önerilir.</div>
+      </div>`;
+    }
+  }
+
   document.getElementById('import-info').innerHTML =
+    krediKontrolHtml + hamHtml +
     `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
       <div>
         <span style="font-size:12px;color:#7a9acd">Toplam Tutar</span><br>
