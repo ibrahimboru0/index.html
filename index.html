@@ -630,6 +630,69 @@ function cleanFirma(aciklama) {
 
   .tab-icon { font-size: 18px; }
 
+  /* ANA SAYFA KART SEÇİM BUTONLARI */
+  .ana-kart-btn {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px 22px;
+    background: var(--card2);
+    border: 2px solid #003399;
+    border-radius: 18px;
+    color: #e8eeff;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    transition: all 0.2s;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ana-kart-btn:hover, .ana-kart-btn:active {
+    border-color: rgba(255,184,0,0.5);
+    background: rgba(255,184,0,0.06);
+    transform: translateY(-1px);
+  }
+  .ana-kart-btn.secili {
+    border-color: #FFB800;
+    background: rgba(255,184,0,0.12);
+    box-shadow: 0 0 0 1px rgba(255,184,0,0.3);
+  }
+  .ana-kart-btn.secili::after {
+    content: '✓';
+    margin-left: auto;
+    font-size: 18px;
+    font-weight: 800;
+    color: #FFB800;
+  }
+
+  /* Kart görselli Ana Sayfa butonları (Kredi/Banka Kartı) */
+  .ana-kart-btn-gorsel {
+    display: block;
+    padding: 10px;
+    position: relative;
+    background: transparent;
+    border: 2px solid transparent;
+  }
+  .ana-kart-btn-gorsel:hover, .ana-kart-btn-gorsel:active {
+    background: rgba(255,255,255,0.03);
+    transform: translateY(-2px) scale(1.01);
+  }
+  .ana-kart-btn-gorsel.secili {
+    border-color: #FFB800;
+    background: rgba(255,184,0,0.06);
+    box-shadow: 0 0 0 1px rgba(255,184,0,0.25);
+  }
+  .ana-kart-btn-gorsel.secili::after {
+    content: '✓';
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 28px; height: 28px;
+    margin-left: 0;
+    background: #FFB800;
+    color: #001a4d;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 900;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
   /* CONTENT */
   .content { padding: 16px; max-width: 1200px; margin: 0 auto; }
 
@@ -1493,7 +1556,10 @@ function cleanFirma(aciklama) {
   </div>
 
   <div class="tabs">
-      <div class="tab active" onclick="switchTab('harcamalar')" id="tab-harcamalar">
+      <div class="tab active" onclick="switchTab('anasayfa')" id="tab-anasayfa">
+        <span class="tab-icon">🏠</span> Ana Sayfa
+      </div>
+      <div class="tab" onclick="switchTab('harcamalar')" id="tab-harcamalar">
         <span class="tab-icon">💳</span> Harcamalar
       </div>
       <div class="tab" onclick="switchTab('takvim')" id="tab-takvim">
@@ -1508,8 +1574,86 @@ function cleanFirma(aciklama) {
   </div>
 
   <div class="content">
+    <!-- ANA SAYFA -->
+    <div class="page active" id="page-anasayfa">
+      <div style="max-width:480px;margin:60px auto 0;text-align:center;padding:0 16px">
+        <div style="font-size:48px;margin-bottom:8px">👋</div>
+        <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:8px">Hangi kartı görmek istersin?</div>
+        <div style="font-size:14px;color:#7a9acd;margin-bottom:36px">Seçimin Harcamalar, Takvim ve Grafikler'de uygulanır</div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <button onclick="selectGlobalKart('kredi')" id="ana-btn-kredi" class="ana-kart-btn ana-kart-btn-gorsel">
+            <svg viewBox="0 0 340 214" style="width:100%;max-width:300px;height:auto;filter:drop-shadow(0 10px 24px rgba(108,47,143,0.45))">
+              <defs>
+                <linearGradient id="krediGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6c2f8f"/>
+                  <stop offset="50%" stop-color="#a855d9"/>
+                  <stop offset="100%" stop-color="#f3e9fb"/>
+                </linearGradient>
+              </defs>
+              <rect x="1" y="1" width="338" height="212" rx="18" fill="url(#krediGrad)"/>
+              <circle cx="300" cy="15" r="85" fill="rgba(255,255,255,0.08)"/>
+              <rect x="30" y="52" width="42" height="32" rx="6" fill="#e8c76f"/>
+              <rect x="36" y="58" width="30" height="20" rx="2" fill="none" stroke="#b8933f" stroke-width="1"/>
+              <line x1="51" y1="58" x2="51" y2="78" stroke="#b8933f" stroke-width="1"/>
+              <line x1="36" y1="68" x2="66" y2="68" stroke="#b8933f" stroke-width="1"/>
+              <g transform="translate(92,58) rotate(90)" stroke="white" stroke-width="2.5" fill="none" opacity="0.9">
+                <path d="M0,0 a8,8 0 0,1 0,16"/>
+                <path d="M0,-6 a14,14 0 0,1 0,28"/>
+                <path d="M0,-12 a20,20 0 0,1 0,40"/>
+              </g>
+              <text x="30" y="34" font-family="Arial, sans-serif" font-size="18" font-weight="800" fill="white">Yapı<tspan fill="#2b2b2b">Kredi</tspan></text>
+              <text x="30" y="110" font-family="Arial, sans-serif" font-size="16" font-weight="900" font-style="italic" fill="white" letter-spacing="1.5">WORLD</text>
+              <text x="30" y="140" font-family="'Courier New', monospace" font-size="18" font-weight="600" fill="white" letter-spacing="2">•••• •••• •••• 3351</text>
+              <text x="30" y="184" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="rgba(255,255,255,0.85)" letter-spacing="1.5">KREDİ KARTI</text>
+              <circle cx="288" cy="184" r="16" fill="rgba(255,255,255,0.85)"/>
+              <circle cx="304" cy="184" r="16" fill="rgba(30,30,30,0.7)"/>
+            </svg>
+          </button>
+
+          <button onclick="selectGlobalKart('banka')" id="ana-btn-banka" class="ana-kart-btn ana-kart-btn-gorsel">
+            <svg viewBox="0 0 340 214" style="width:100%;max-width:300px;height:auto;filter:drop-shadow(0 10px 24px rgba(0,48,135,0.45))">
+              <defs>
+                <linearGradient id="bankaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0a3d91"/>
+                  <stop offset="50%" stop-color="#0055B3"/>
+                  <stop offset="100%" stop-color="#001a5c"/>
+                </linearGradient>
+              </defs>
+              <rect x="1" y="1" width="338" height="212" rx="18" fill="url(#bankaGrad)"/>
+              <circle cx="305" cy="25" r="75" fill="rgba(255,255,255,0.05)"/>
+              <circle cx="325" cy="185" r="55" fill="rgba(255,255,255,0.04)"/>
+              <rect x="30" y="52" width="42" height="32" rx="6" fill="#e8c76f"/>
+              <rect x="36" y="58" width="30" height="20" rx="2" fill="none" stroke="#b8933f" stroke-width="1"/>
+              <line x1="51" y1="58" x2="51" y2="78" stroke="#b8933f" stroke-width="1"/>
+              <line x1="36" y1="68" x2="66" y2="68" stroke="#b8933f" stroke-width="1"/>
+              <g transform="translate(92,58) rotate(90)" stroke="white" stroke-width="2.5" fill="none" opacity="0.9">
+                <path d="M0,0 a8,8 0 0,1 0,16"/>
+                <path d="M0,-6 a14,14 0 0,1 0,28"/>
+                <path d="M0,-12 a20,20 0 0,1 0,40"/>
+              </g>
+              <text x="30" y="34" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="white">Yapı<tspan fill="#FFB800">Kredi</tspan></text>
+              <text x="30" y="132" font-family="'Courier New', monospace" font-size="19" font-weight="600" fill="white" letter-spacing="3">•••• •••• •••• ••••</text>
+              <text x="30" y="178" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="rgba(255,255,255,0.8)" letter-spacing="1.5">BANKA KARTI</text>
+              <text x="30" y="193" font-family="Arial, sans-serif" font-size="9" fill="rgba(255,255,255,0.5)" letter-spacing="1">VADESİZ HESAP</text>
+              <circle cx="288" cy="184" r="16" fill="rgba(255,255,255,0.85)"/>
+              <circle cx="304" cy="184" r="16" fill="rgba(255,184,0,0.85)"/>
+            </svg>
+          </button>
+
+          <button onclick="selectGlobalKart('tumu')" id="ana-btn-tumu" class="ana-kart-btn">
+            <span style="font-size:28px">💳</span>
+            <div style="text-align:left">
+              <div style="font-size:16px;font-weight:800">Tümü</div>
+              <div style="font-size:12px;opacity:0.7;font-weight:400">Banka kartı + Kredi kartı birlikte</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- HARCAMALAR PAGE -->
-    <div class="page active" id="page-harcamalar">
+    <div class="page" id="page-harcamalar">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:10px; flex-wrap:wrap;">
         <!-- Sol: Ay seçici + İşlem türü -->
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1578,6 +1722,13 @@ function cleanFirma(aciklama) {
 
     <!-- GRAFIKLER PAGE -->
     <div class="page" id="page-grafikler">
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <select id="graf-kart-sec" onchange="setGrafKartFilter(this.value)" style="background:#002266;color:#e8eeff;border:1px solid #003399;border-radius:10px;padding:8px 14px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;font-weight:600">
+          <option value="banka">🏦 Banka Kartı</option>
+          <option value="kredi">💎 Kredi Kartı</option>
+          <option value="tumu">💳 Tümü</option>
+        </select>
+      </div>
       <div class="charts-grid">
         <div class="chart-card sektor-combo-card">
           <div class="chart-title">Sektöre Göre Harcama</div>
@@ -1876,6 +2027,8 @@ let currentAy = 'all';       // 'all' veya '2026-03'
 let currentIslemTuru = 'hepsi'; // 'hepsi' | 'normal' | 'eft' | 'atm'
 let currentKart = 'banka';   // 'tumu' | 'banka' | 'kredi' - varsayılan banka kartı
 
+let ayFilterInitialized = false; // ilk açılışta "bu ay" otomatik seçilsin, sonrasında kullanıcı seçimi korunsun
+
 function updateAyDropdown() {
   const aylar = [...new Set(harcamalar.filter(h=>h.tarih).map(h=>h.tarih.slice(0,7)))].sort().reverse();
   const sel = document.getElementById('hrc-ay-sec');
@@ -1886,8 +2039,17 @@ function updateAyDropdown() {
       const [y,m] = a.split('-');
       return `<option value="${a}">${MONTH_NAMES[parseInt(m)-1]} ${y}</option>`;
     }).join('');
-  if ([...sel.options].some(o => o.value === mevcut)) sel.value = mevcut;
-  else sel.value = 'all';
+
+  if (!ayFilterInitialized) {
+    // İlk açılışta: içinde bulunduğumuz ayın verisi varsa otomatik onu seç
+    ayFilterInitialized = true;
+    const buAy = new Date().toISOString().slice(0,7);
+    sel.value = aylar.includes(buAy) ? buAy : 'all';
+  } else if ([...sel.options].some(o => o.value === mevcut)) {
+    sel.value = mevcut;
+  } else {
+    sel.value = 'all';
+  }
   currentAy = sel.value;
 }
 
@@ -1983,6 +2145,9 @@ function checkLogin() {
       document.getElementById('app').classList.add('active');
       const kartSec = document.getElementById('hrc-kart-sec');
       if (kartSec) kartSec.value = currentKart;
+      const grafSec = document.getElementById('graf-kart-sec');
+      if (grafSec) grafSec.value = currentKart;
+      renderAnaSayfa();
       renderTable();
       updateSummary();
     }, 400);
@@ -2183,9 +2348,44 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('page-'+tab).classList.add('active');
-  if (tab === 'grafikler') renderCharts();
+  if (tab === 'anasayfa') renderAnaSayfa();
+  if (tab === 'grafikler') {
+    const gsel = document.getElementById('graf-kart-sec');
+    if (gsel) gsel.value = currentKart;
+    renderCharts();
+  }
   if (tab === 'faturalar') renderFaturaListe();
-  if (tab === 'takvim') renderTakvim();
+  if (tab === 'takvim') {
+    const tsel = document.getElementById('tvm-kart-sec');
+    if (tsel) tsel.value = currentKart;
+    renderTakvim();
+  }
+  if (tab === 'harcamalar') {
+    const hsel = document.getElementById('hrc-kart-sec');
+    if (hsel) hsel.value = currentKart;
+    renderTable();
+  }
+}
+
+// ===================== ANA SAYFA (global kart filtresi) =====================
+function renderAnaSayfa() {
+  ['kredi','banka','tumu'].forEach(k => {
+    document.getElementById('ana-btn-'+k)?.classList.toggle('secili', currentKart === k);
+  });
+}
+
+function selectGlobalKart(kart) {
+  currentKart = kart;
+  renderAnaSayfa();
+  // Diğer sekmelerdeki kart seçicileri de senkronize et
+  const sel = document.getElementById('hrc-kart-sec');
+  if (sel) sel.value = kart;
+  const tsel = document.getElementById('tvm-kart-sec');
+  if (tsel) tsel.value = kart;
+  const gsel = document.getElementById('graf-kart-sec');
+  if (gsel) gsel.value = kart;
+  showToast(kart === 'kredi' ? '💎 Kredi Kartı seçildi' : kart === 'banka' ? '🏦 Banka Kartı seçildi' : '💳 Tümü seçildi');
+  switchTab('harcamalar');
 }
 
 // ===================== TABLE =====================
@@ -2243,6 +2443,9 @@ function setKartFilter(kart) {
   currentKart = kart;
   const sel = document.getElementById('hrc-kart-sec');
   if (sel && sel.value !== kart) sel.value = kart;
+  const gsel = document.getElementById('graf-kart-sec');
+  if (gsel) gsel.value = kart;
+  renderAnaSayfa();
   renderTable();
 }
 
@@ -2373,8 +2576,13 @@ function setSektorAy(ay) {
 function renderSektorChart() {
   destroyChart('sektor');
 
+  // Global kart filtresine göre veri havuzunu daralt (Ana Sayfa'daki seçime göre)
+  const kartFiltreli = currentKart === 'banka' ? harcamalar.filter(h => (h.hesap||'vadesiz') !== 'kredi')
+    : currentKart === 'kredi' ? harcamalar.filter(h => h.hesap === 'kredi')
+    : harcamalar;
+
   // Ay butonlarını güncelle
-  const aylar = [...new Set(harcamalar.filter(h=>h.tarih).map(h=>h.tarih.slice(0,7)))].sort().reverse();
+  const aylar = [...new Set(kartFiltreli.filter(h=>h.tarih).map(h=>h.tarih.slice(0,7)))].sort().reverse();
   const btnDiv = document.getElementById('sektor-ay-btns');
   if (btnDiv) {
     btnDiv.innerHTML = `<button class="gun-hafta-btn${sektorAy==='all'?' active':''}" onclick="setSektorAy('all')">Tümü</button>` +
@@ -2387,8 +2595,8 @@ function renderSektorChart() {
 
   // Veriyi filtrele
   const kayitlar = sektorAy === 'all'
-    ? harcamalar
-    : harcamalar.filter(h => h.tarih && h.tarih.startsWith(sektorAy));
+    ? kartFiltreli
+    : kartFiltreli.filter(h => h.tarih && h.tarih.startsWith(sektorAy));
 
   // Sektörleri topla
   const sektorToplam = {};
@@ -2490,7 +2698,7 @@ function renderSektorChart() {
   const aylikCount = {};
   const aylikSektor = {}; // { '2026-03': { market: 500, yemek: 200, ... } }
 
-  harcamalar.forEach(h => {
+  harcamalar.filter(h => currentKart === 'banka' ? (h.hesap||'vadesiz') !== 'kredi' : currentKart === 'kredi' ? h.hesap === 'kredi' : true).forEach(h => {
     if (!h.tarih) return;
     const d = new Date(h.tarih);
     if (isNaN(d)) return;
@@ -2645,8 +2853,11 @@ function renderAylikChart() {
 
 function renderFirmaChart() {
   destroyChart('firma');
+  const kartFiltreli = currentKart === 'banka' ? harcamalar.filter(h => (h.hesap||'vadesiz') !== 'kredi')
+    : currentKart === 'kredi' ? harcamalar.filter(h => h.hesap === 'kredi')
+    : harcamalar;
   const firmaMap = {};
-  harcamalar.forEach(h => {
+  kartFiltreli.forEach(h => {
     firmaMap[h.firma] = (firmaMap[h.firma] || 0) + parseFloat(h.tutar);
   });
   const sorted = Object.entries(firmaMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
@@ -2738,9 +2949,12 @@ function buildHaftalar(filtered) {
 function renderHaftalikChart() {
   destroyChart('haftalik');
 
+  const kartFiltreli = currentKart === 'banka' ? harcamalar.filter(h => (h.hesap||'vadesiz') !== 'kredi')
+    : currentKart === 'kredi' ? harcamalar.filter(h => h.hesap === 'kredi')
+    : harcamalar;
 
   // Ay butonlarını oluştur
-  const aylar = [...new Set(harcamalar
+  const aylar = [...new Set(kartFiltreli
     .filter(h => h.tarih)
     .map(h => h.tarih.slice(0,7))
   )].sort(); // eskiden yeniye
@@ -2757,7 +2971,7 @@ function renderHaftalikChart() {
   }
 
   // Ay filtrelemesi
-  let filtered = harcamalar.filter(h => h.tarih && !isNaN(new Date(h.tarih)));
+  let filtered = kartFiltreli.filter(h => h.tarih && !isNaN(new Date(h.tarih)));
   if (gunGrafikAy !== 'all') {
     filtered = filtered.filter(h => h.tarih.startsWith(gunGrafikAy));
   }
@@ -3830,7 +4044,6 @@ function confirmImport() {
 
 // ===================== TAKVİM =====================
 let takvimAy = null; // 'YYYY-MM' formatında
-let currentTakvimKart = 'tumu'; // 'tumu' | 'banka' | 'kredi' - takvimde varsayılan: tümü (banka+kredi birleşik)
 
 function renderTakvim() {
   const container = document.getElementById('takvim-container');
@@ -3846,7 +4059,7 @@ function renderTakvim() {
   const gunMap = {};
   harcamalar
     .filter(h => h.tarih && h.tarih.startsWith(takvimAy))
-    .filter(h => currentTakvimKart === 'tumu' ? true : currentTakvimKart === 'kredi' ? h.hesap === 'kredi' : (h.hesap || 'vadesiz') !== 'kredi')
+    .filter(h => currentKart === 'tumu' ? true : currentKart === 'kredi' ? h.hesap === 'kredi' : (h.hesap || 'vadesiz') !== 'kredi')
     .forEach(h => {
       if (!gunMap[h.tarih]) gunMap[h.tarih] = { tutar: 0, items: [] };
       gunMap[h.tarih].tutar += parseFloat(h.tutar || 0);
@@ -3922,9 +4135,9 @@ function renderTakvim() {
 
       <div style="display:flex;justify-content:center;margin-bottom:16px">
         <select id="tvm-kart-sec" onchange="setTakvimKartFilter(this.value)" style="background:#002266;color:#e8eeff;border:1px solid #003399;border-radius:10px;padding:8px 14px;font-size:13px;font-family:Outfit,sans-serif;cursor:pointer;font-weight:600">
-          <option value="tumu"  ${currentTakvimKart==='tumu'?'selected':''}>💳 Tümü (Banka + Kredi)</option>
-          <option value="banka" ${currentTakvimKart==='banka'?'selected':''}>🏦 Sadece Banka Kartı</option>
-          <option value="kredi" ${currentTakvimKart==='kredi'?'selected':''}>💎 Sadece Kredi Kartı</option>
+          <option value="tumu"  ${currentKart==='tumu'?'selected':''}>💳 Tümü (Banka + Kredi)</option>
+          <option value="banka" ${currentKart==='banka'?'selected':''}>🏦 Sadece Banka Kartı</option>
+          <option value="kredi" ${currentKart==='kredi'?'selected':''}>💎 Sadece Kredi Kartı</option>
         </select>
       </div>
 
@@ -3959,8 +4172,23 @@ function renderTakvim() {
 }
 
 function setTakvimKartFilter(kart) {
-  currentTakvimKart = kart;
+  currentKart = kart;
+  const sel = document.getElementById('hrc-kart-sec');
+  if (sel) sel.value = kart;
+  const gsel = document.getElementById('graf-kart-sec');
+  if (gsel) gsel.value = kart;
+  renderAnaSayfa();
   renderTakvim();
+}
+
+function setGrafKartFilter(kart) {
+  currentKart = kart;
+  const sel = document.getElementById('hrc-kart-sec');
+  if (sel) sel.value = kart;
+  const tsel = document.getElementById('tvm-kart-sec');
+  if (tsel) tsel.value = kart;
+  renderAnaSayfa();
+  renderCharts();
 }
 
 function takvimAyDegis(yon) {
@@ -3975,7 +4203,7 @@ function showTakvimDetay(tarih) {
   const gunData = {};
   harcamalar
     .filter(h => h.tarih === tarih)
-    .filter(h => currentTakvimKart === 'tumu' ? true : currentTakvimKart === 'kredi' ? h.hesap === 'kredi' : (h.hesap || 'vadesiz') !== 'kredi')
+    .filter(h => currentKart === 'tumu' ? true : currentKart === 'kredi' ? h.hesap === 'kredi' : (h.hesap || 'vadesiz') !== 'kredi')
     .forEach(h => {
       if (!gunData[tarih]) gunData[tarih] = { tutar: 0, items: [] };
       gunData[tarih].tutar += parseFloat(h.tutar || 0);
