@@ -1641,12 +1641,33 @@ function cleanFirma(aciklama) {
             </svg>
           </button>
 
-          <button onclick="selectGlobalKart('tumu')" id="ana-btn-tumu" class="ana-kart-btn">
-            <span style="font-size:28px">💳</span>
-            <div style="text-align:left">
-              <div style="font-size:16px;font-weight:800">Tümü</div>
-              <div style="font-size:12px;opacity:0.7;font-weight:400">Banka kartı + Kredi kartı birlikte</div>
-            </div>
+          <button onclick="selectGlobalKart('tumu')" id="ana-btn-tumu" class="ana-kart-btn ana-kart-btn-gorsel">
+            <svg viewBox="0 0 340 214" style="width:100%;max-width:300px;height:auto;filter:drop-shadow(0 10px 24px rgba(90,70,180,0.45))">
+              <defs>
+                <linearGradient id="tumuGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0055B3"/>
+                  <stop offset="50%" stop-color="#7c4fd6"/>
+                  <stop offset="100%" stop-color="#a855d9"/>
+                </linearGradient>
+              </defs>
+              <rect x="1" y="1" width="338" height="212" rx="18" fill="url(#tumuGrad)"/>
+              <circle cx="300" cy="15" r="85" fill="rgba(255,255,255,0.07)"/>
+              <circle cx="325" cy="190" r="55" fill="rgba(255,255,255,0.05)"/>
+              <rect x="30" y="52" width="42" height="32" rx="6" fill="#e8c76f"/>
+              <rect x="36" y="58" width="30" height="20" rx="2" fill="none" stroke="#b8933f" stroke-width="1"/>
+              <line x1="51" y1="58" x2="51" y2="78" stroke="#b8933f" stroke-width="1"/>
+              <line x1="36" y1="68" x2="66" y2="68" stroke="#b8933f" stroke-width="1"/>
+              <g transform="translate(92,58) rotate(90)" stroke="white" stroke-width="2.5" fill="none" opacity="0.9">
+                <path d="M0,0 a8,8 0 0,1 0,16"/>
+                <path d="M0,-6 a14,14 0 0,1 0,28"/>
+                <path d="M0,-12 a20,20 0 0,1 0,40"/>
+              </g>
+              <text x="30" y="34" font-family="Arial, sans-serif" font-size="19" font-weight="800" fill="white">Yapı<tspan fill="#FFB800">Kredi</tspan></text>
+              <text x="30" y="140" font-family="'Courier New', monospace" font-size="19" font-weight="600" fill="white" letter-spacing="3">•••• •••• •••• ••••</text>
+              <text x="30" y="184" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="rgba(255,255,255,0.9)" letter-spacing="1.5">TÜM KARTLAR</text>
+              <circle cx="288" cy="184" r="16" fill="rgba(255,255,255,0.85)"/>
+              <circle cx="304" cy="184" r="16" fill="rgba(30,30,30,0.6)"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -2573,6 +2594,22 @@ function setSektorAy(ay) {
   renderSektorChart();
 }
 
+// Bir işlemin hangi "dönem"e ait sayılacağını belirler.
+// Kredi Kartı görünümündeyken: işlemin kendi tarihi yerine EKSTRENİN kesim ayı (ekstreAy)
+// kullanılır — çünkü tek bir ekstre 2 farklı takvim ayına yayılabilir (örn. 09 Haziran - 05
+// Temmuz), ve grafiklerde bunun takvim ayına göre bölünmesi yerine TEK bir ekstre olarak
+// görünmesi istenir. Banka Kartı / Tümü görünümünde ise her zamanki gibi takvim ayı kullanılır.
+function getPeriodKey(h) {
+  if (currentKart === 'kredi' && h.hesap === 'kredi' && h.ekstreAy) return h.ekstreAy;
+  return h.tarih ? h.tarih.slice(0,7) : null;
+}
+
+function getPeriodLabel(key) {
+  const [y, m] = key.split('-');
+  const base = MONTH_NAMES[parseInt(m)-1] + ' ' + y;
+  return currentKart === 'kredi' ? base + ' Ekstresi' : base;
+}
+
 function renderSektorChart() {
   destroyChart('sektor');
 
@@ -2581,14 +2618,13 @@ function renderSektorChart() {
     : currentKart === 'kredi' ? harcamalar.filter(h => h.hesap === 'kredi')
     : harcamalar;
 
-  // Ay butonlarını güncelle
-  const aylar = [...new Set(kartFiltreli.filter(h=>h.tarih).map(h=>h.tarih.slice(0,7)))].sort().reverse();
+  // Ay/Ekstre butonlarını güncelle
+  const aylar = [...new Set(kartFiltreli.map(h => getPeriodKey(h)).filter(Boolean))].sort().reverse();
   const btnDiv = document.getElementById('sektor-ay-btns');
   if (btnDiv) {
     btnDiv.innerHTML = `<button class="gun-hafta-btn${sektorAy==='all'?' active':''}" onclick="setSektorAy('all')">Tümü</button>` +
       aylar.map(a => {
-        const [y,m] = a.split('-');
-        const lbl = MONTH_NAMES[parseInt(m)-1] + ' ' + y;
+        const lbl = getPeriodLabel(a);
         return `<button class="gun-hafta-btn${sektorAy===a?' active':''}" onclick="setSektorAy('${a}')">${lbl}</button>`;
       }).join('');
   }
@@ -2596,7 +2632,7 @@ function renderSektorChart() {
   // Veriyi filtrele
   const kayitlar = sektorAy === 'all'
     ? kartFiltreli
-    : kartFiltreli.filter(h => h.tarih && h.tarih.startsWith(sektorAy));
+    : kartFiltreli.filter(h => getPeriodKey(h) === sektorAy);
 
   // Sektörleri topla
   const sektorToplam = {};
@@ -2699,10 +2735,8 @@ function renderSektorChart() {
   const aylikSektor = {}; // { '2026-03': { market: 500, yemek: 200, ... } }
 
   harcamalar.filter(h => currentKart === 'banka' ? (h.hesap||'vadesiz') !== 'kredi' : currentKart === 'kredi' ? h.hesap === 'kredi' : true).forEach(h => {
-    if (!h.tarih) return;
-    const d = new Date(h.tarih);
-    if (isNaN(d)) return;
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const key = getPeriodKey(h);
+    if (!key) return;
     const tutar = parseFloat(h.tutar || 0);
     aylikMap[key] = (aylikMap[key] || 0) + tutar;
     aylikCount[key] = (aylikCount[key] || 0) + 1;
@@ -2725,10 +2759,9 @@ function renderSektorChart() {
   const sektorColors = {'🍽️ Yeme-İçme':'#FFB800','🛒 Market':'#0055B3','📱 Fatura':'#6c5ce7','🛍️ Online':'#00b894','📚 Eğitim':'#e17055','⛽ Yakıt':'#fd79a8','🚌 Ulaşım':'#00cec9','👕 Giyim':'#a29bfe','🏥 Sağlık':'#55efc4','📦 Diğer':'#636e72'};
 
   panel.innerHTML = `
-    <div style="font-size:12px;font-weight:700;color:#a0b8e0;margin-bottom:10px;letter-spacing:0.5px">SON 3 AYLIK SEKTÖR DAĞILIMI</div>
+    <div style="font-size:12px;font-weight:700;color:#a0b8e0;margin-bottom:10px;letter-spacing:0.5px">${currentKart === 'kredi' ? 'SON 3 EKSTRE SEKTÖR DAĞILIMI' : 'SON 3 AYLIK SEKTÖR DAĞILIMI'}</div>
     ${sortedDesc.map((key, i) => {
-      const [y, m] = key.split('-');
-      const ayAd = MONTH_NAMES[parseInt(m)-1] + ' ' + y;
+      const ayAd = getPeriodLabel(key);
       const tutar = aylikMap[key];
       const islem = aylikCount[key];
       // Önceki ay = sortedDesc'te bir sonraki (daha eski)
@@ -2953,27 +2986,23 @@ function renderHaftalikChart() {
     : currentKart === 'kredi' ? harcamalar.filter(h => h.hesap === 'kredi')
     : harcamalar;
 
-  // Ay butonlarını oluştur
-  const aylar = [...new Set(kartFiltreli
-    .filter(h => h.tarih)
-    .map(h => h.tarih.slice(0,7))
-  )].sort(); // eskiden yeniye
+  // Ay/Ekstre butonlarını oluştur
+  const aylar = [...new Set(kartFiltreli.map(h => getPeriodKey(h)).filter(Boolean))].sort();
 
   const ayBtnDiv = document.getElementById('gun-ay-btns');
   if (ayBtnDiv) {
     ayBtnDiv.innerHTML =
       `<button class="gun-hafta-btn${gunGrafikAy==='all'?' active':''}" onclick="gunGrafikAy='all';gunGrafikHafta='all';renderHaftalikChart()">Tüm Zamanlar</button>` +
       aylar.map(a => {
-        const [y,m] = a.split('-');
-        const lbl = MONTH_NAMES[parseInt(m)-1] + ' ' + y;
+        const lbl = getPeriodLabel(a);
         return `<button class="gun-hafta-btn${gunGrafikAy===a?' active':''}" onclick="gunGrafikAy='${a}';gunGrafikHafta='all';renderHaftalikChart()">${lbl}</button>`;
       }).join('');
   }
 
-  // Ay filtrelemesi
+  // Ay/Ekstre filtrelemesi
   let filtered = kartFiltreli.filter(h => h.tarih && !isNaN(new Date(h.tarih)));
   if (gunGrafikAy !== 'all') {
-    filtered = filtered.filter(h => h.tarih.startsWith(gunGrafikAy));
+    filtered = filtered.filter(h => getPeriodKey(h) === gunGrafikAy);
   }
 
   // Hafta butonlarını oluştur
