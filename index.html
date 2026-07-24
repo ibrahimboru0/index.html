@@ -1670,6 +1670,16 @@ function cleanFirma(aciklama) {
             </svg>
           </button>
         </div>
+
+        <!-- Birleşik Ekle Butonu: Hesap Hareketleri/Ekstre PDF veya Ekran Görüntüsü -->
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.08)">
+          <div style="font-size:13px;color:#7a9acd;margin-bottom:12px">Hesap hareketleri/ekstre PDF'i veya uygulama ekran görüntüsü ekle — sistem içeriğe göre otomatik işler</div>
+          <input type="file" id="unified-file-input" accept="image/*,.pdf" onchange="handleUnifiedUpload(event)" style="display:none">
+          <button onclick="document.getElementById('unified-file-input').click()" style="width:100%;padding:16px;background:linear-gradient(135deg,#00b894,#00a383);border:none;border-radius:14px;color:white;font-size:14px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+            ➕ Ekle
+          </button>
+          <button onclick="borcManuelDuzenle()" style="width:100%;padding:10px;background:none;border:none;color:#7a9acd;font-size:12px;cursor:pointer;margin-top:8px">✏️ Borç tutarlarını elle gir</button>
+        </div>
       </div>
     </div>
 
@@ -1697,14 +1707,14 @@ function cleanFirma(aciklama) {
             <button class="period-btn"        onclick="setIslemTuru('masraf')" id="itu-masraf">🏦 Masraf</button>
           </div>
         </div>
-        <!-- Sağ: Harcama ekle + PDF yükle -->
+        <!-- Sağ: Harcama ekle + Birleşik Ekle -->
         <div style="display:flex;gap:10px;align-items:center;">
           <button class="upload-btn" style="background:linear-gradient(135deg,#FFB800,#e6a500)" onclick="openModal()">
             ➕ Harcama Ekle
           </button>
-          <input type="file" id="pdf-file-input" accept=".pdf" onchange="handlePdfUpload(event)">
+          <input type="file" id="pdf-file-input" accept="image/*,.pdf" onchange="handleUnifiedUpload(event)">
           <button class="upload-btn" onclick="document.getElementById('pdf-file-input').click()">
-            📄 PDF Yükle
+            ➕ Ekle
           </button>
         </div>
       </div>
@@ -1751,6 +1761,13 @@ function cleanFirma(aciklama) {
         </select>
       </div>
       <div class="charts-grid">
+        <div class="chart-card full" id="borc-chart-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div class="chart-title" style="margin-bottom:0">💰 Toplam Borç Durumu</div>
+            <button onclick="borcManuelDuzenle()" style="background:rgba(0,184,148,0.12);border:1px solid rgba(0,184,148,0.3);color:#4fd1a5;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif">✏️ Düzenle</button>
+          </div>
+          <div id="borc-chart-body"></div>
+        </div>
         <div class="chart-card sektor-combo-card">
           <div class="chart-title">Sektöre Göre Harcama</div>
           <div class="sektor-combo">
@@ -1986,6 +2003,31 @@ function cleanFirma(aciklama) {
       <button onclick="closeTakvimDetay()" style="background:rgba(255,255,255,0.08);border:none;color:#a0b8e0;font-size:18px;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <div class="takvim-detay-liste" id="td-liste"></div>
+  </div>
+</div>
+
+<!-- BORÇ DURUMU ONAY/DÜZENLE MODAL -->
+<div id="borc-onay-modal" style="display:none;position:fixed;inset:0;z-index:210;background:rgba(0,10,40,0.85);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#002266;border:1.5px solid rgba(0,184,148,0.4);border-radius:20px;padding:26px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+    <div style="font-size:36px;text-align:center;margin-bottom:8px">💰</div>
+    <div style="font-size:17px;font-weight:800;color:#e8eeff;text-align:center;margin-bottom:16px">Borç Durumunu Güncelle</div>
+
+    <div id="borc-bulundu-info"></div>
+
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;color:#9fc0f0;font-weight:700;display:block;margin-bottom:6px">🏦 Banka Kartı (KMH) Borcu (₺)</label>
+      <input type="number" step="0.01" id="borc-banka-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
+      <div style="font-size:11px;color:#7a9acd;margin-top:4px">Vadesiz hesabındaki eksi (negatif) Güncel Bakiye tutarı</div>
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:12px;color:#c9a8ff;font-weight:700;display:block;margin-bottom:6px">💎 Kredi Kartı Borcu (₺)</label>
+      <input type="number" step="0.01" id="borc-kredi-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="borcOnayKapat()" style="flex:1;padding:12px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#a0b8e0;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer">İptal</button>
+      <button onclick="borcKaydet()" style="flex:1;padding:12px;background:linear-gradient(135deg,#00b894,#00a383);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer">Kaydet</button>
+    </div>
   </div>
 </div>
 
@@ -2578,9 +2620,108 @@ function saveHarcama() {
 const COLORS = ['#003087','#0055B3','#FFB800','#00b894','#e74c3c','#6c5ce7','#fd79a8','#00cec9','#e17055'];
 
 function renderCharts() {
+  renderBorcChart();
   renderSektorChart();
   renderFirmaChart();
   renderHaftalikChart();
+}
+
+function renderBorcChart() {
+  const body = document.getElementById('borc-chart-body');
+  if (!body) return;
+
+  const banka = borcDurumu.banka || 0;
+  const kredi = borcDurumu.kredi || 0;
+  const total = banka + kredi;
+  const fmt = n => '₺' + n.toLocaleString('tr-TR', {minimumFractionDigits:2});
+
+  if (!borcDurumu.tarih) {
+    body.innerHTML = `<div style="text-align:center;padding:30px 16px;color:#7a9acd">
+      <div style="font-size:36px;margin-bottom:10px">💳</div>
+      <div style="font-size:14px;margin-bottom:6px;color:#a0b8e0">Henüz borç durumu eklenmedi</div>
+      <div style="font-size:12px;opacity:0.7">Ana Sayfa'dan ekran görüntüsü veya ekstre PDF'i ekleyerek başlayabilirsin</div>
+    </div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="sektor-combo">
+      <div style="position:relative;height:220px">
+        <canvas id="chart-borc"></canvas>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;justify-content:center">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(90,150,220,0.08);border:1px solid rgba(90,150,220,0.25);border-radius:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:10px;height:10px;border-radius:3px;background:#0055B3"></div>
+            <span style="font-size:13px;color:#9fc0f0;font-weight:600">🏦 Banka Kartı (KMH)</span>
+          </div>
+          <span style="font-size:15px;font-weight:800;color:#e8eeff">${fmt(banka)}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(160,110,255,0.08);border:1px solid rgba(160,110,255,0.25);border-radius:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:10px;height:10px;border-radius:3px;background:#a855d9"></div>
+            <span style="font-size:13px;color:#c9a8ff;font-weight:600">💎 Kredi Kartı</span>
+          </div>
+          <span style="font-size:15px;font-weight:800;color:#e8eeff">${fmt(kredi)}</span>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);text-align:center;margin-top:2px">Son güncelleme: ${new Date(borcDurumu.tarih).toLocaleDateString('tr-TR')}</div>
+      </div>
+    </div>`;
+
+  destroyChart('borc');
+  if (total <= 0) return;
+
+  charts['borc'] = new Chart(document.getElementById('chart-borc'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Banka Kartı (KMH)', 'Kredi Kartı'],
+      datasets: [{
+        data: [banka, kredi],
+        backgroundColor: ['#0055B3', '#a855d9'],
+        borderColor: '#001a4d',
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#002266',
+          titleColor: '#FFB800',
+          bodyColor: '#e8eeff',
+          padding: 12,
+          callbacks: {
+            label: ctx => {
+              const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
+              return ` ${fmt(ctx.parsed)}  (%${pct})`;
+            }
+          }
+        }
+      }
+    },
+    plugins: [{
+      id: 'centerTextBorc',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { top, bottom, left, right } } = chart;
+        const cx = (left + right) / 2;
+        const cy = (top + bottom) / 2;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '600 11px Outfit';
+        ctx.fillStyle = '#7a9acd';
+        ctx.fillText('TOPLAM BORÇ', cx, cy - 14);
+        ctx.font = '800 17px Outfit';
+        ctx.fillStyle = '#ff6b6b';
+        const totalFmt = '₺' + (total >= 1000 ? (total/1000).toFixed(1)+'K' : total.toLocaleString('tr-TR', {maximumFractionDigits:0}));
+        ctx.fillText(totalFmt, cx, cy + 10);
+        ctx.restore();
+      }
+    }]
+  });
 }
 
 function destroyChart(id) {
@@ -3152,6 +3293,205 @@ function showGunDetay(dayIndex, chartData, gunler) {
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// ===================== BORÇ DURUMU (Banka Kartı + Kredi Kartı anlık borç takibi) =====================
+let borcDurumu = JSON.parse(localStorage.getItem('yk_borc_durumu') || '{"banka":0,"kredi":0,"tarih":null}');
+
+function saveBorcDurumu() {
+  localStorage.setItem('yk_borc_durumu', JSON.stringify(borcDurumu));
+}
+
+// Türkçe formatlı sayıyı (32.670,05 veya -42.329,95) sayıya çevirir
+function parseTRSayi(str) {
+  if (!str) return null;
+  const cleaned = String(str).replace(/\./g, '').replace(',', '.');
+  const v = parseFloat(cleaned);
+  return isNaN(v) ? null : v;
+}
+
+// Ekstre metninden "Dönem Borcu" satırını çıkarır (Dönem İçi Harcamalar ile karışmaz,
+// çünkü aralarında farklı kelimeler var — regex sadece "Dönem Borcu" bitişik ifadesini arar)
+function extractDonemBorcu(rawText) {
+  const m = rawText.match(/D[öo]nem\s+Borcu\s*:?\s*([\d\.]+,\d{2})/i);
+  if (!m) return null;
+  return parseTRSayi(m[1]);
+}
+
+// OCR (ekran görüntüsü) metninden banka kartı (KMH) ve kredi kartı borcunu çıkarmaya çalışır.
+// Banka: "Güncel Bakiye" NEGATİFSE bu bir borç/eksi bakiyedir (KMH kullanımı).
+// Kredi: "Güncel Dönem Borcu" değeri doğrudan kredi kartı borcudur.
+// Ekran görüntülerinde rakam bazen etiketten ÖNCE (büyük yazı üstte, küçük etiket altta),
+// bazen SONRA görünebilir — bu yüzden her etiket için komşu etiketler arasındaki "hücre"
+// içinde en yakın tutarı arıyoruz (başka bir alanın değerini yanlışlıkla almamak için).
+function parseOcrBorcText(text) {
+  const norm = text.replace(/\s+/g, ' ');
+  const amountRe = /(-?\d{1,3}(?:\.\d{3})*,\d{2})/g;
+
+  const labelPatterns = [
+    { key: 'kullanilabilirBakiye', re: /Kullan[ıi]labilir\s+Bakiye/i },
+    { key: 'guncelBakiye',         re: /G[üu]ncel\s+Bakiye/i },
+    { key: 'guncelDonemBorcu',     re: /G[üu]ncel\s+D[öo]nem\s+Borcu/i },
+    { key: 'kullanilabilirLimit',  re: /Kullan[ıi]labilir\s+Limit/i },
+  ];
+
+  const labelMatches = [];
+  labelPatterns.forEach(lp => {
+    const m = lp.re.exec(norm);
+    if (m) labelMatches.push({ key: lp.key, start: m.index, end: m.index + m[0].length });
+  });
+  labelMatches.sort((a, b) => a.start - b.start);
+
+  const amountMatches = [];
+  let am;
+  while ((am = amountRe.exec(norm))) {
+    amountMatches.push({ value: am[1], start: am.index, end: am.index + am[0].length });
+  }
+
+  function nearestAmountFor(labelKey) {
+    const idx = labelMatches.findIndex(l => l.key === labelKey);
+    if (idx === -1) return null;
+    const lbl = labelMatches[idx];
+    const prevLabelEnd = idx > 0 ? labelMatches[idx - 1].end : 0;
+    const nextLabelStart = idx < labelMatches.length - 1 ? labelMatches[idx + 1].start : norm.length;
+
+    // Sadece komşu etiketler arasındaki (kendi "hücresi" içindeki) tutarları değerlendir
+    const candidates = amountMatches.filter(a => a.start >= prevLabelEnd && a.end <= nextLabelStart);
+    if (candidates.length === 0) return null;
+
+    // Ekran görüntülerinde rakam görsel olarak etiketin ÜSTÜNDE (önce) yer alır; bu yüzden
+    // önce "etiketten önceki" adayları tercih ediyoruz, sadece hiç yoksa sonrasına bakıyoruz.
+    const oncekiler = candidates.filter(a => a.end <= lbl.start);
+    const sonrakiler = candidates.filter(a => a.start >= lbl.end);
+    if (oncekiler.length > 0) {
+      oncekiler.sort((a, b) => (lbl.start - a.end) - (lbl.start - b.end));
+      return oncekiler[0].value;
+    }
+    if (sonrakiler.length > 0) {
+      sonrakiler.sort((a, b) => (a.start - lbl.end) - (b.start - lbl.end));
+      return sonrakiler[0].value;
+    }
+    return null;
+  }
+
+  let banka = null, kredi = null;
+
+  const bakiyeStr = nearestAmountFor('guncelBakiye');
+  if (bakiyeStr) {
+    const v = parseTRSayi(bakiyeStr);
+    if (v !== null && v < 0) banka = Math.abs(v);
+  }
+
+  const borcStr = nearestAmountFor('guncelDonemBorcu');
+  if (borcStr) {
+    const v = parseTRSayi(borcStr);
+    if (v !== null) kredi = Math.abs(v);
+  }
+
+  return { banka, kredi };
+}
+
+let borcBekleyenVeri = { banka: null, kredi: null };
+
+// Birleşik "Ekle" butonu: yüklenen dosyanın türüne göre doğru akışa yönlendirir.
+// PDF ise → hesap hareketleri/kredi kartı ekstresi olarak harcama içe aktarma akışına gider
+// (kredi kartı ekstresiyse borç durumu da otomatik güncellenir).
+// Görsel ise → banka uygulaması ekran görüntüsü olarak borç durumu güncelleme akışına gider.
+async function handleUnifiedUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    await handlePdfUpload(event);
+  } else if (file.type.startsWith('image/')) {
+    await handleBorcDosyaUpload(event);
+  } else {
+    event.target.value = '';
+    showToast('⚠️ Sadece PDF veya görsel dosyası yükleyebilirsin');
+  }
+}
+
+async function handleBorcDosyaUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+
+  borcBekleyenVeri = { banka: null, kredi: null };
+
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    showUploadToast('⏳', 'PDF Okunuyor...', 'Dönem borcu aranıyor', 30);
+    try {
+      const buf = await file.arrayBuffer();
+      const items = await extractPdfItems(buf.slice(0));
+      const reconstructedText = buildRowLines(items);
+      if (isKrediKartiEkstre(reconstructedText)) {
+        borcBekleyenVeri.kredi = extractDonemBorcu(reconstructedText);
+      }
+      hideUploadToast();
+      borcOnayAc();
+    } catch (err) {
+      hideUploadToast();
+      showToast('❌ PDF okunamadı: ' + err.message);
+    }
+  } else if (file.type.startsWith('image/')) {
+    showUploadToast('⏳', 'Görsel Okunuyor...', 'Bu biraz sürebilir, lütfen bekle', 20);
+    try {
+      if (typeof Tesseract === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('OCR kütüphanesi yüklenemedi'));
+          document.head.appendChild(s);
+        });
+      }
+      showUploadToast('⏳', 'Görsel Okunuyor...', 'Metin taranıyor (OCR)', 60);
+      const result = await Tesseract.recognize(file, 'tur+eng');
+      const parsed = parseOcrBorcText(result.data.text);
+      borcBekleyenVeri = parsed;
+      hideUploadToast();
+      borcOnayAc();
+    } catch (err) {
+      hideUploadToast();
+      showToast('⚠️ Görsel otomatik okunamadı, elle girebilirsin');
+      borcOnayAc();
+    }
+  } else {
+    showToast('⚠️ Sadece PDF veya görsel dosyası yükleyebilirsin');
+  }
+}
+
+function borcOnayAc() {
+  document.getElementById('borc-banka-input').value = borcBekleyenVeri.banka !== null ? borcBekleyenVeri.banka.toFixed(2) : (borcDurumu.banka || '');
+  document.getElementById('borc-kredi-input').value = borcBekleyenVeri.kredi !== null ? borcBekleyenVeri.kredi.toFixed(2) : (borcDurumu.kredi || '');
+
+  const bulunanHtml = [];
+  if (borcBekleyenVeri.banka !== null) bulunanHtml.push('🏦 Banka Kartı (KMH) borcu otomatik bulundu');
+  if (borcBekleyenVeri.kredi !== null) bulunanHtml.push('💎 Kredi Kartı borcu otomatik bulundu');
+  document.getElementById('borc-bulundu-info').innerHTML = bulunanHtml.length
+    ? `<div style="font-size:12px;color:#4fd1a5;background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px">✅ ${bulunanHtml.join(' · ')} — kontrol edip kaydedebilirsin</div>`
+    : `<div style="font-size:12px;color:#FFB800;background:rgba(255,184,0,0.1);border:1px solid rgba(255,184,0,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px">ℹ️ Otomatik bulunamadı, tutarları elle girebilirsin</div>`;
+
+  document.getElementById('borc-onay-modal').style.display = 'flex';
+}
+
+function borcOnayKapat() {
+  document.getElementById('borc-onay-modal').style.display = 'none';
+}
+
+function borcKaydet() {
+  const banka = parseFloat(document.getElementById('borc-banka-input').value) || 0;
+  const kredi = parseFloat(document.getElementById('borc-kredi-input').value) || 0;
+  borcDurumu = { banka, kredi, tarih: new Date().toISOString() };
+  saveBorcDurumu();
+  borcOnayKapat();
+  showToast('✅ Borç durumu güncellendi');
+  renderBorcChart();
+}
+
+function borcManuelDuzenle() {
+  borcBekleyenVeri = { banka: null, kredi: null };
+  borcOnayAc();
+}
+
 // ===================== FATURALAR =====================
 let faturalar = JSON.parse(localStorage.getItem('yk_faturalar') || '[]');
 let faturaSecimModu = false;
@@ -3374,6 +3714,13 @@ async function handlePdfUpload(event) {
       kartTipi = 'kredi';
       parsed = parseKrediKarti(reconstructedText);
       resmiToplam = extractEkstreResmiToplam(reconstructedText);
+
+      // Aynı ekstreden "Dönem Borcu"nu da çıkarıp Borç Durumu takibini otomatik güncelle
+      const donemBorcu = extractDonemBorcu(reconstructedText);
+      if (donemBorcu !== null) {
+        borcDurumu = { ...borcDurumu, kredi: donemBorcu, tarih: new Date().toISOString() };
+        saveBorcDurumu();
+      }
     } else {
       parsed = parseYKByCoords(items);
       if (parsed.length === 0) {
@@ -3388,7 +3735,8 @@ async function handlePdfUpload(event) {
       return;
     }
 
-    showUploadToast('✅', `${parsed.length} İşlem Bulundu!`, 'Önizleme açılıyor...', 100);
+    const borcMesaji = (kartTipi === 'kredi' && borcDurumu.tarih) ? ` · 💰 Kredi kartı borcu güncellendi` : '';
+    showUploadToast('✅', `${parsed.length} İşlem Bulundu!`, 'Önizleme açılıyor...' + borcMesaji, 100);
     hideUploadToast();
     openImportModal(parsed, file.name, { hamGiden, hamGelen, hamSatirlar, kartTipi, resmiToplam });
 
@@ -4277,6 +4625,10 @@ function closeTakvimDetay() {
 
 document.getElementById('takvim-detay-modal').addEventListener('click', function(e) {
   if (e.target === this) closeTakvimDetay();
+});
+
+document.getElementById('borc-onay-modal').addEventListener('click', function(e) {
+  if (e.target === this) borcOnayKapat();
 });
 
 function copyAboneNo(no) {
