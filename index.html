@@ -3317,74 +3317,167 @@ function extractDonemBorcu(rawText) {
 }
 
 // OCR (ekran görüntüsü) metninden banka kartı (KMH) ve kredi kartı borcunu çıkarmaya çalışır.
-// Banka: "Güncel Bakiye" NEGATİFSE bu bir borç/eksi bakiyedir (KMH kullanımı).
-// Kredi: "Güncel Dönem Borcu" değeri doğrudan kredi kartı borcudur.
-// Ekran görüntülerinde rakam bazen etiketten ÖNCE (büyük yazı üstte, küçük etiket altta),
-// bazen SONRA görünebilir — bu yüzden her etiket için komşu etiketler arasındaki "hücre"
-// içinde en yakın tutarı arıyoruz (başka bir alanın değerini yanlışlıkla almamak için).
+//
+// BANKA/KMH: Öncelikle metindeki HERHANGİ BİR NEGATİF (eksi işaretli) TL tutarını arar —
+// bu ekranda sadece "Güncel Bakiye" eksi olabilir (Kullanılabilir Bakiye, Dönem Borcu, Limit
+// hiçbir zaman negatif gösterilmez), bu yüzden işaret tek başına en güvenilir sinyaldir.
+// OCR eksi işaretini kaçırırsa (ince "-" karakteri bazen okunamaz), "Güncel Bakiye" etiketine
+// en yakın tutara geri döner.
+//
+// KREDİ: "Dönem Borcu" ifadesini arar, ama "Limit" kelimesine yakın olan tutarları BİLEREK
+// dışlar — çünkü "Kullanılabilir Limit" hemen yanında olduğu için OCR sırasında en çok
+// karışan alan budur.
 function parseOcrBorcText(text) {
   const norm = text.replace(/\s+/g, ' ');
-  const amountRe = /(-?\d{1,3}(?:\.\d{3})*,\d{2})/g;
-
-  const labelPatterns = [
-    { key: 'kullanilabilirBakiye', re: /Kullan[ıi]labilir\s+Bakiye/i },
-    { key: 'guncelBakiye',         re: /G[üu]ncel\s+Bakiye/i },
-    { key: 'guncelDonemBorcu',     re: /G[üu]ncel\s+D[öo]nem\s+Borcu/i },
-    { key: 'kullanilabilirLimit',  re: /Kullan[ıi]labilir\s+Limit/i },
-  ];
-
-  const labelMatches = [];
-  labelPatterns.forEach(lp => {
-    const m = lp.re.exec(norm);
-    if (m) labelMatches.push({ key: lp.key, start: m.index, end: m.index + m[0].length });
-  });
-  labelMatches.sort((a, b) => a.start - b.start);
-
-  const amountMatches = [];
-  let am;
-  while ((am = amountRe.exec(norm))) {
-    amountMatches.push({ value: am[1], start: am.index, end: am.index + am[0].length });
-  }
-
-  function nearestAmountFor(labelKey) {
-    const idx = labelMatches.findIndex(l => l.key === labelKey);
-    if (idx === -1) return null;
-    const lbl = labelMatches[idx];
-    const prevLabelEnd = idx > 0 ? labelMatches[idx - 1].end : 0;
-    const nextLabelStart = idx < labelMatches.length - 1 ? labelMatches[idx + 1].start : norm.length;
-
-    // Sadece komşu etiketler arasındaki (kendi "hücresi" içindeki) tutarları değerlendir
-    const candidates = amountMatches.filter(a => a.start >= prevLabelEnd && a.end <= nextLabelStart);
-    if (candidates.length === 0) return null;
-
-    // Ekran görüntülerinde rakam görsel olarak etiketin ÜSTÜNDE (önce) yer alır; bu yüzden
-    // önce "etiketten önceki" adayları tercih ediyoruz, sadece hiç yoksa sonrasına bakıyoruz.
-    const oncekiler = candidates.filter(a => a.end <= lbl.start);
-    const sonrakiler = candidates.filter(a => a.start >= lbl.end);
-    if (oncekiler.length > 0) {
-      oncekiler.sort((a, b) => (lbl.start - a.end) - (lbl.start - b.end));
-      return oncekiler[0].value;
-    }
-    if (sonrakiler.length > 0) {
-      sonrakiler.sort((a, b) => (a.start - lbl.end) - (b.start - lbl.end));
-      return sonrakiler[0].value;
-    }
-    return null;
-  }
-
   let banka = null, kredi = null;
 
-  const bakiyeStr = nearestAmountFor('guncelBakiye');
-  if (bakiyeStr) {
-    const v = parseTRSayi(bakiyeStr);
-    if (v !== null && v < 0) banka = Math.abs(v);
+  // ── BANKA / KMH ──
+  const negMatch = norm.match(/-\s*(\d{1,3}(?:\.\d{3})*,\d{2})/);
+  if (negMatch) {
+    banka = parseTRSayi(negMatch[1]);
+  } else {
+    // Yedek: eksi işareti OCR'da kaybolmuşsa, "Güncel Bakiye" etiketine en yakın tutarı al
+    const lblMatch = /G[üu]ncel\s+Bakiye/i.exec(norm);
+    if (lblMatch) {
+      const kullBakiyePos = [...norm.matchAll(/Kullan[ıi]labilir\s+Bakiye/gi)].map(m => m.index);
+      const v = nearestAmountToLabel(norm, lblMatch.index, lblMatch.index + lblMatch[0].length, kullBakiyePos);
+      if (v !== null) banka = Math.abs(parseTRSayi(v));
+    }
   }
 
-  const borcStr = nearestAmountFor('guncelDonemBorcu');
-  if (borcStr) {
-    const v = parseTRSayi(borcStr);
-    if (v !== null) kredi = Math.abs(v);
+  // ── KREDİ KARTI (Dönem Borcu) ──
+  const donemMatch = /D[öo]nem\s+Borcu/i.exec(norm);
+  if (donemMatch) {
+    // "Limit" kelimesinin tüm konumlarını bul — bunlara yakın tutarları aday listesinden çıkar
+    const limitPositions = [...norm.matchAll(/Limit/gi)].map(m => m.index);
+    const v = nearestAmountToLabel(norm, donemMatch.index, donemMatch.index + donemMatch[0].length, limitPositions);
+    if (v !== null) kredi = Math.abs(parseTRSayi(v));
   }
+
+  return { banka, kredi };
+}
+
+// Bir etikete (lblStart-lblEnd aralığı) en yakın TL tutarını bulur.
+// excludeNear: bu konumlara (örn. "Limit" kelimesinin yerleri) göre bir tutar
+// EĞER bizim etiketimizden daha yakınsa, o tutar bize ait SAYILMAZ — yani her
+// tutar, kendisine en yakın olan etikete atanır (yön fark etmeksizin), bu sayede
+// komşu bir alanın (Kullanılabilir Limit gibi) değeri yanlışlıkla seçilmez.
+function nearestAmountToLabel(norm, lblStart, lblEnd, excludeNear) {
+  const amountRe = /(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+  const candidates = [];
+  let am;
+  while ((am = amountRe.exec(norm))) {
+    candidates.push({ value: am[1], start: am.index, end: am.index + am[0].length });
+  }
+
+  function distToLabel(c) {
+    return c.end <= lblStart ? lblStart - c.end : c.start - lblEnd;
+  }
+  function distToExclude(c) {
+    if (!excludeNear.length) return Infinity;
+    return Math.min(...excludeNear.map(lp => Math.abs(lp - c.start)));
+  }
+
+  // Bir tutar, hariç tutulacak etikete kendi etiketimizden DAHA YAKINSA elenir
+  const filtered = candidates.filter(c => distToLabel(c) < distToExclude(c));
+  if (filtered.length === 0) return null;
+
+  filtered.sort((a, b) => distToLabel(a) - distToLabel(b));
+  return filtered[0].value;
+}
+
+// ── KOORDİNAT TABANLI OCR AYRIŞTIRMA (Tesseract kelime bbox'ları ile) ──
+// Ekrandaki tutar/etiket çiftleri 2 boyutlu bir ızgarada (grid) yer alır — bu yüzden
+// düz metin mesafesi yerine GERÇEK x-y konumlarını kullanmak çok daha güvenilir.
+// Mantık: kelimeleri y-koordinatına göre satırlara grupla, her satırı x'e göre sırala,
+// bir etiketi bulduğun satırın x-aralığıyla ÇAKIŞAN (aynı sütunda olan) rakamı bir üst
+// satırda (rakam genelde etiketin üstünde büyük yazılır), yoksa aynı satırda, yoksa bir
+// alt satırda ara.
+
+function buildRowsFromWords(words, yTol) {
+  const sorted = [...words].sort((a, b) => a.bbox.y0 - b.bbox.y0);
+  const rows = [];
+  sorted.forEach(w => {
+    const yc = (w.bbox.y0 + w.bbox.y1) / 2;
+    let row = rows.find(r => Math.abs(r.yCenter - yc) < yTol);
+    if (!row) { row = { yCenter: yc, words: [] }; rows.push(row); }
+    row.words.push(w);
+  });
+  rows.forEach(r => r.words.sort((a, b) => a.bbox.x0 - b.bbox.x0));
+  rows.sort((a, b) => a.yCenter - b.yCenter);
+  return rows;
+}
+
+function rowTextWithOffsets(row) {
+  let text = '';
+  const offsets = [];
+  row.words.forEach((w, i) => {
+    if (text.length > 0) { text += ' '; offsets.push(-1); }
+    for (let c = 0; c < w.text.length; c++) offsets.push(i);
+    text += w.text;
+  });
+  return { text, offsets };
+}
+
+function findLabelSpanInRow(row, labelRegex) {
+  const { text, offsets } = rowTextWithOffsets(row);
+  const m = labelRegex.exec(text);
+  if (!m) return null;
+  const startIdx = m.index;
+  const endIdx = m.index + m[0].length - 1;
+  const wordIndices = new Set();
+  for (let i = startIdx; i <= endIdx && i < offsets.length; i++) {
+    if (offsets[i] >= 0) wordIndices.add(offsets[i]);
+  }
+  if (wordIndices.size === 0) return null;
+  const idxArr = [...wordIndices];
+  return {
+    x0: Math.min(...idxArr.map(i => row.words[i].bbox.x0)),
+    x1: Math.max(...idxArr.map(i => row.words[i].bbox.x1))
+  };
+}
+
+function findAmountInRowOverlapping(row, x0, x1) {
+  if (!row) return null;
+  const amountRe = /^-?\d{1,3}(\.\d{3})*,\d{2}$/;
+  let best = null, bestOverlap = 0;
+  row.words.forEach(w => {
+    const clean = w.text.replace(/[^\d.,\-]/g, '');
+    if (amountRe.test(clean)) {
+      const overlap = Math.min(w.bbox.x1, x1) - Math.max(w.bbox.x0, x0);
+      if (overlap > bestOverlap) { bestOverlap = overlap; best = clean; }
+    }
+  });
+  return best;
+}
+
+function parseOcrWordsGeometric(words) {
+  const rows = buildRowsFromWords(words, 14);
+  let banka = null, kredi = null;
+
+  const labelDefs = [
+    { key: 'guncelBakiye', re: /G[üu]ncel\s*Bakiye/i },
+    { key: 'guncelDonemBorcu', re: /G[üu]ncel\s*D[öo]nem\s*Borcu/i },
+  ];
+
+  labelDefs.forEach(def => {
+    for (let i = 0; i < rows.length; i++) {
+      const span = findLabelSpanInRow(rows[i], def.re);
+      if (!span) continue;
+
+      // Rakam genelde etiketin ÜSTÜNDEKİ satırda (ekrandaki gerçek görsel düzen)
+      let amount = findAmountInRowOverlapping(rows[i - 1], span.x0, span.x1);
+      if (!amount) amount = findAmountInRowOverlapping(rows[i], span.x0, span.x1);
+      if (!amount) amount = findAmountInRowOverlapping(rows[i + 1], span.x0, span.x1);
+
+      if (amount) {
+        const v = parseTRSayi(amount);
+        if (def.key === 'guncelBakiye' && v !== null && v < 0) banka = Math.abs(v);
+        if (def.key === 'guncelDonemBorcu' && v !== null) kredi = Math.abs(v);
+      }
+      break;
+    }
+  });
 
   return { banka, kredi };
 }
@@ -3445,7 +3538,12 @@ async function handleBorcDosyaUpload(event) {
       }
       showUploadToast('⏳', 'Görsel Okunuyor...', 'Metin taranıyor (OCR)', 60);
       const result = await Tesseract.recognize(file, 'tur+eng');
-      const parsed = parseOcrBorcText(result.data.text);
+      const words = (result.data.words || []).filter(w => w.text && w.text.trim());
+      let parsed = words.length ? parseOcrWordsGeometric(words) : { banka: null, kredi: null };
+      // Koordinat tabanlı yöntem bir şey bulamazsa düz metin tabanlı yönteme geri düş
+      if (parsed.banka === null && parsed.kredi === null) {
+        parsed = parseOcrBorcText(result.data.text);
+      }
       borcBekleyenVeri = parsed;
       hideUploadToast();
       borcOnayAc();
