@@ -2016,12 +2016,12 @@ function cleanFirma(aciklama) {
 
     <div style="margin-bottom:14px">
       <label style="font-size:12px;color:#9fc0f0;font-weight:700;display:block;margin-bottom:6px">🏦 Banka Kartı (KMH) Borcu (₺)</label>
-      <input type="number" step="0.01" id="borc-banka-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
+      <input type="text" inputmode="decimal" id="borc-banka-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
       <div style="font-size:11px;color:#7a9acd;margin-top:4px">Vadesiz hesabındaki eksi (negatif) Güncel Bakiye tutarı</div>
     </div>
     <div style="margin-bottom:20px">
       <label style="font-size:12px;color:#c9a8ff;font-weight:700;display:block;margin-bottom:6px">💎 Kredi Kartı Borcu (₺)</label>
-      <input type="number" step="0.01" id="borc-kredi-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
+      <input type="text" inputmode="decimal" id="borc-kredi-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
     </div>
 
     <div style="display:flex;gap:10px">
@@ -3394,6 +3394,33 @@ function nearestAmountToLabel(norm, lblStart, lblEnd, excludeNear) {
 // satırda (rakam genelde etiketin üstünde büyük yazılır), yoksa aynı satırda, yoksa bir
 // alt satırda ara.
 
+// Tesseract.js sürüm/konfigürasyona göre kelime verisini FARKLI yapılarda döndürebilir
+// (düz `data.words` dizisi, veya `data.blocks > paragraphs > lines > words` iç içe
+// hiyerarşisi, veya `data.lines > words`). Hangisi mevcutsa onu düzleştirip kullanır.
+function extractWordsFromTesseractResult(result) {
+  const data = result.data || {};
+
+  if (Array.isArray(data.words) && data.words.length > 0) {
+    return data.words.filter(w => w.text && w.text.trim());
+  }
+
+  const flat = [];
+  (data.blocks || []).forEach(block => {
+    (block.paragraphs || []).forEach(para => {
+      (para.lines || []).forEach(line => {
+        (line.words || []).forEach(w => flat.push(w));
+      });
+    });
+  });
+  if (flat.length > 0) return flat.filter(w => w.text && w.text.trim());
+
+  const flat2 = [];
+  (data.lines || []).forEach(line => {
+    (line.words || []).forEach(w => flat2.push(w));
+  });
+  return flat2.filter(w => w.text && w.text.trim());
+}
+
 function buildRowsFromWords(words, yTol) {
   const sorted = [...words].sort((a, b) => a.bbox.y0 - b.bbox.y0);
   const rows = [];
@@ -3538,12 +3565,18 @@ async function handleBorcDosyaUpload(event) {
       }
       showUploadToast('⏳', 'Görsel Okunuyor...', 'Metin taranıyor (OCR)', 60);
       const result = await Tesseract.recognize(file, 'tur+eng');
-      const words = (result.data.words || []).filter(w => w.text && w.text.trim());
-      let parsed = words.length ? parseOcrWordsGeometric(words) : { banka: null, kredi: null };
-      // Koordinat tabanlı yöntem bir şey bulamazsa düz metin tabanlı yönteme geri düş
-      if (parsed.banka === null && parsed.kredi === null) {
-        parsed = parseOcrBorcText(result.data.text);
-      }
+      const words = extractWordsFromTesseractResult(result);
+      const geo = words.length ? parseOcrWordsGeometric(words) : { banka: null, kredi: null };
+      const txt = parseOcrBorcText(result.data.text || '');
+      // Banka (KMH) için metin tabanlı yöntem (eksi işareti araması) oldukça güvenilir,
+      // koordinat yöntemi bulamazsa ona geri düşülebilir. Kredi Kartı için ise metin
+      // tabanlı yöntem "Kullanılabilir Limit" ile karışabiliyor — bu yüzden SADECE
+      // koordinat yöntemi güvenilir sayılır; o bulamazsa boş bırakılır (yanlış ama
+      // kendinden emin bir sayı göstermek, boş bırakıp elle girdirmekten daha kötü).
+      const parsed = {
+        banka: geo.banka !== null ? geo.banka : txt.banka,
+        kredi: geo.kredi
+      };
       borcBekleyenVeri = parsed;
       hideUploadToast();
       borcOnayAc();
@@ -3558,8 +3591,9 @@ async function handleBorcDosyaUpload(event) {
 }
 
 function borcOnayAc() {
-  document.getElementById('borc-banka-input').value = borcBekleyenVeri.banka !== null ? borcBekleyenVeri.banka.toFixed(2) : (borcDurumu.banka || '');
-  document.getElementById('borc-kredi-input').value = borcBekleyenVeri.kredi !== null ? borcBekleyenVeri.kredi.toFixed(2) : (borcDurumu.kredi || '');
+  const fmtTR = n => n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('borc-banka-input').value = borcBekleyenVeri.banka !== null ? fmtTR(borcBekleyenVeri.banka) : (borcDurumu.banka ? fmtTR(borcDurumu.banka) : '');
+  document.getElementById('borc-kredi-input').value = borcBekleyenVeri.kredi !== null ? fmtTR(borcBekleyenVeri.kredi) : (borcDurumu.kredi ? fmtTR(borcDurumu.kredi) : '');
 
   const bulunanHtml = [];
   if (borcBekleyenVeri.banka !== null) bulunanHtml.push('🏦 Banka Kartı (KMH) borcu otomatik bulundu');
@@ -3576,8 +3610,8 @@ function borcOnayKapat() {
 }
 
 function borcKaydet() {
-  const banka = parseFloat(document.getElementById('borc-banka-input').value) || 0;
-  const kredi = parseFloat(document.getElementById('borc-kredi-input').value) || 0;
+  const banka = parseTRSayi(document.getElementById('borc-banka-input').value) || 0;
+  const kredi = parseTRSayi(document.getElementById('borc-kredi-input').value) || 0;
   borcDurumu = { banka, kredi, tarih: new Date().toISOString() };
   saveBorcDurumu();
   borcOnayKapat();
