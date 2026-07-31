@@ -2024,7 +2024,9 @@ function cleanFirma(aciklama) {
       <input type="text" inputmode="decimal" id="borc-kredi-input" placeholder="0,00" style="width:100%;background:#001a4d;border:1.5px solid #003399;border-radius:10px;padding:12px;color:#e8eeff;font-size:16px;font-family:Outfit,sans-serif;box-sizing:border-box">
     </div>
 
-    <div style="display:flex;gap:10px">
+    <div id="borc-adaylar-wrap"></div>
+
+    <div style="display:flex;gap:10px;margin-top:8px">
       <button onclick="borcOnayKapat()" style="flex:1;padding:12px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;color:#a0b8e0;font-size:14px;font-weight:600;font-family:Outfit,sans-serif;cursor:pointer">İptal</button>
       <button onclick="borcKaydet()" style="flex:1;padding:12px;background:linear-gradient(135deg,#00b894,#00a383);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer">Kaydet</button>
     </div>
@@ -3510,6 +3512,18 @@ function parseOcrWordsGeometric(words) {
 }
 
 let borcBekleyenVeri = { banka: null, kredi: null };
+let borcOcrAdaylar = []; // OCR metninde bulunan tüm TL tutarları (otomatik tahmin yanlışsa elle seçmek için)
+
+// Metindeki TÜM TL tutarlarını çıkarır, tekrarları eler, büyükten küçüğe sıralar.
+function extractAllTLAmounts(text) {
+  const norm = text.replace(/\s+/g, ' ');
+  const amountRe = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+  const found = norm.match(amountRe) || [];
+  const uniq = [...new Set(found.map(s => s.replace(/^-/, '')))]; // KMH zaten pozitif gösterilecek
+  const nums = uniq.map(s => ({ str: s, val: parseTRSayi(s) })).filter(x => x.val !== null && x.val > 0);
+  nums.sort((a, b) => b.val - a.val);
+  return nums.map(x => x.str);
+}
 
 // Birleşik "Ekle" butonu: yüklenen dosyanın türüne göre doğru akışa yönlendirir.
 // PDF ise → hesap hareketleri/kredi kartı ekstresi olarak harcama içe aktarma akışına gider
@@ -3535,6 +3549,7 @@ async function handleBorcDosyaUpload(event) {
   event.target.value = '';
 
   borcBekleyenVeri = { banka: null, kredi: null };
+  borcOcrAdaylar = [];
 
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
     showUploadToast('⏳', 'PDF Okunuyor...', 'Dönem borcu aranıyor', 30);
@@ -3578,11 +3593,18 @@ async function handleBorcDosyaUpload(event) {
         kredi: geo.kredi
       };
       borcBekleyenVeri = parsed;
+
+      // OCR ne bulduysa bulsun (otomatik tahmin yanlış olabilir), metindeki TÜM tutarları
+      // da çıkar ve onay ekranında dokunulabilir seçenek olarak sun — böylece otomatik
+      // tahmin hatalı olsa bile doğru tutara tek dokunuşla atayabilirsin.
+      borcOcrAdaylar = extractAllTLAmounts(result.data.text || '');
+
       hideUploadToast();
       borcOnayAc();
     } catch (err) {
       hideUploadToast();
       showToast('⚠️ Görsel otomatik okunamadı, elle girebilirsin');
+      borcOcrAdaylar = [];
       borcOnayAc();
     }
   } else {
@@ -3599,10 +3621,35 @@ function borcOnayAc() {
   if (borcBekleyenVeri.banka !== null) bulunanHtml.push('🏦 Banka Kartı (KMH) borcu otomatik bulundu');
   if (borcBekleyenVeri.kredi !== null) bulunanHtml.push('💎 Kredi Kartı borcu otomatik bulundu');
   document.getElementById('borc-bulundu-info').innerHTML = bulunanHtml.length
-    ? `<div style="font-size:12px;color:#4fd1a5;background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px">✅ ${bulunanHtml.join(' · ')} — kontrol edip kaydedebilirsin</div>`
-    : `<div style="font-size:12px;color:#FFB800;background:rgba(255,184,0,0.1);border:1px solid rgba(255,184,0,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px">ℹ️ Otomatik bulunamadı, tutarları elle girebilirsin</div>`;
+    ? `<div style="font-size:12px;color:#4fd1a5;background:rgba(0,184,148,0.1);border:1px solid rgba(0,184,148,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px">✅ ${bulunanHtml.join(' · ')} — <strong>lütfen kontrol et</strong>, yanlışsa aşağıdaki tutarlardan doğrusuna dokun</div>`
+    : `<div style="font-size:12px;color:#FFB800;background:rgba(255,184,0,0.1);border:1px solid rgba(255,184,0,0.3);border-radius:10px;padding:10px 12px;margin-bottom:14px">ℹ️ Otomatik bulunamadı — aşağıdaki tutarlardan seçebilir veya elle girebilirsin</div>`;
+
+  // OCR'ın bulduğu tüm tutarları dokunulabilir seçenek olarak göster
+  const chipsWrap = document.getElementById('borc-adaylar-wrap');
+  if (borcOcrAdaylar.length > 0) {
+    const chips = borcOcrAdaylar.map(s =>
+      `<div style="display:flex;gap:6px">
+        <span style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#e8eeff;font-family:'Courier New',monospace">₺${s}</span>
+        <button onclick="borcChipSec('banka','${s}')" style="background:rgba(90,150,220,0.15);border:1px solid rgba(90,150,220,0.4);color:#9fc0f0;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap">🏦 Banka</button>
+        <button onclick="borcChipSec('kredi','${s}')" style="background:rgba(160,110,255,0.15);border:1px solid rgba(160,110,255,0.4);color:#c9a8ff;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap">💎 Kredi</button>
+      </div>`
+    ).join('');
+    chipsWrap.innerHTML = `<div style="font-size:11px;color:#7a9acd;font-weight:700;margin:14px 0 8px">GÖRSELDE BULUNAN TUTARLAR — DOĞRU OLANA DOKUN</div>
+      <div style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto">${chips}</div>`;
+  } else {
+    chipsWrap.innerHTML = '';
+  }
 
   document.getElementById('borc-onay-modal').style.display = 'flex';
+}
+
+function borcChipSec(field, str) {
+  const v = parseTRSayi(str);
+  if (v === null) return;
+  const el = document.getElementById(field === 'banka' ? 'borc-banka-input' : 'borc-kredi-input');
+  el.value = v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  el.style.outline = '2px solid #00b894';
+  setTimeout(() => { el.style.outline = ''; }, 600);
 }
 
 function borcOnayKapat() {
@@ -3621,6 +3668,7 @@ function borcKaydet() {
 
 function borcManuelDuzenle() {
   borcBekleyenVeri = { banka: null, kredi: null };
+  borcOcrAdaylar = [];
   borcOnayAc();
 }
 
