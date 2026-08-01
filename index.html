@@ -3543,6 +3543,42 @@ async function handleUnifiedUpload(event) {
   }
 }
 
+// Koyu zeminli (dark mode) ekran görüntülerini OCR'dan önce ters çevirir (koyu zemin →
+// açık zemin, açık yazı → koyu yazı). OCR motorları "koyu yazı - açık zemin" için çok daha
+// iyi eğitildiğinden, bu basit dönüşüm okuma doğruluğunu belirgin şekilde artırabilir.
+function invertImageForOCR(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      try {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = imageData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          // Önce ters çevir (koyu zemin → açık zemin)
+          let r = 255 - d[i], g = 255 - d[i + 1], b = 255 - d[i + 2];
+          // Gri tonlamaya çevirip kontrastı artır — renkli (örn. kırmızı) yazılar
+          // dahil her metin OCR için maksimum netlikte koyu/açık hale gelir
+          let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          gray = Math.max(0, Math.min(255, (gray - 128) * 1.4 + 128)); // kontrast artırma
+          d[i] = d[i + 1] = d[i + 2] = gray;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Dönüştürme başarısız')), 'image/png');
+      } catch (e) {
+        reject(e);
+      }
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => reject(new Error('Görsel yüklenemedi'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 async function handleBorcDosyaUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -3579,7 +3615,13 @@ async function handleBorcDosyaUpload(event) {
         });
       }
       showUploadToast('⏳', 'Görsel Okunuyor...', 'Metin taranıyor (OCR)', 60);
-      const result = await Tesseract.recognize(file, 'tur+eng');
+      let ocrKaynak = file;
+      try {
+        ocrKaynak = await invertImageForOCR(file);
+      } catch (e) {
+        // Ters çevirme başarısız olursa orijinal dosyayla devam et
+      }
+      const result = await Tesseract.recognize(ocrKaynak, 'tur+eng');
       const words = extractWordsFromTesseractResult(result);
       const geo = words.length ? parseOcrWordsGeometric(words) : { banka: null, kredi: null };
       const txt = parseOcrBorcText(result.data.text || '');
