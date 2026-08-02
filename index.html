@@ -3424,6 +3424,15 @@ function extractWordsFromTesseractResult(result) {
 }
 
 function buildRowsFromWords(words, yTol) {
+  // Tolerans sabit bir piksel değeri yerine görüntüdeki GERÇEK kelime yüksekliklerinin
+  // medyanına göre hesaplanır — böylece küçük/kırpılmış veya büyük/tam ekran görüntülerde
+  // aynı mantık doğru çalışır (sabit 14px değeri düşük çözünürlüklü görüntülerde yanlış
+  // satır gruplamasına yol açabiliyordu).
+  if (!yTol) {
+    const heights = words.map(w => w.bbox.y1 - w.bbox.y0).filter(h => h > 0).sort((a, b) => a - b);
+    const median = heights.length ? heights[Math.floor(heights.length / 2)] : 14;
+    yTol = Math.max(6, median * 0.6);
+  }
   const sorted = [...words].sort((a, b) => a.bbox.y0 - b.bbox.y0);
   const rows = [];
   sorted.forEach(w => {
@@ -3466,9 +3475,15 @@ function findLabelSpanInRow(row, labelRegex) {
   };
 }
 
+// Bir satırda, etiketin x-aralığıyla çakışan bir TL tutarı arar.
+// OCR bazen "11.979,13" gibi bir sayıyı TEK kelime yerine 2-3 parçaya bölebilir
+// (örn. "11.979" ve "13" ayrı ayrı) — bu yüzden önce tek kelime olarak tam eşleşen
+// aranır, bulunamazsa birbirine YAKIN (küçük boşluklu) ardışık kelimeler birleştirilip
+// denenir.
 function findAmountInRowOverlapping(row, x0, x1) {
   if (!row) return null;
   const amountRe = /^-?\d{1,3}(\.\d{3})*,\d{2}$/;
+
   let best = null, bestOverlap = 0;
   row.words.forEach(w => {
     const clean = w.text.replace(/[^\d.,\-]/g, '');
@@ -3477,11 +3492,32 @@ function findAmountInRowOverlapping(row, x0, x1) {
       if (overlap > bestOverlap) { bestOverlap = overlap; best = clean; }
     }
   });
-  return best;
+  if (best) return best;
+
+  // Tek kelimede bulunamadı: ardışık, birbirine yakın kelimeleri birleştirip dene
+  for (let i = 0; i < row.words.length; i++) {
+    let combined = row.words[i].text;
+    let cx0 = row.words[i].bbox.x0, cx1 = row.words[i].bbox.x1;
+    const cleanFirst = combined.replace(/[^\d.,\-]/g, '');
+    if (!/\d/.test(cleanFirst)) continue; // rakam içermeyen kelimeyle başlama
+    for (let j = i + 1; j < row.words.length && j < i + 4; j++) {
+      const gap = row.words[j].bbox.x0 - row.words[j - 1].bbox.x1;
+      if (gap > 18) break; // çok uzaksa aynı sayının devamı değildir
+      combined += row.words[j].text;
+      cx1 = row.words[j].bbox.x1;
+      const clean = combined.replace(/[^\d.,\-]/g, '');
+      if (amountRe.test(clean)) {
+        const overlap = Math.min(cx1, x1) - Math.max(cx0, x0);
+        if (overlap > 0) return clean;
+      }
+    }
+  }
+  return null;
 }
 
+
 function parseOcrWordsGeometric(words) {
-  const rows = buildRowsFromWords(words, 14);
+  const rows = buildRowsFromWords(words); // tolerans görüntüdeki kelime yüksekliklerine göre otomatik hesaplanır
   let banka = null, kredi = null;
 
   const labelDefs = [
